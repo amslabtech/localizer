@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-	<!-- <param name="PARENT_FRAME" value="/map" /> -->
+	<param name="PARENT_FRAME" value="/map" />
 	<!-- <param name="CHILD_FRAME" value="/matching_base_link" /> -->
 
 	<node pkg="localizer" type="map_match" name="map_match" output="screen">	
