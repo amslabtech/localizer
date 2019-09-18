@@ -2,6 +2,7 @@
 <launch>
     <node pkg="localizer" type="ekf" name="ekf" output="screen">
         <rosparam file="$(find localizer)/config/ekf_sigs.yaml" />
+        <rosparam name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
 		
 		<!-- <remap from="/imu/data" to="/imu/data/calibrated" /> -->
 		<!-- <remap from="/odom" to="/tinypower/odom" /> -->

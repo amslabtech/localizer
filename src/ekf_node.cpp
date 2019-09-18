@@ -52,6 +52,7 @@ double s_ndt[3]; 		// NDT観測値の分散 (sig_x, sig_y, sig_yaw)
 double ndt_sig[2];
 double s_input[4]; 		// 制御の誤差パラメータ (要素数[0],[2]は並進速度，[1],[3]は回頭速度のパラメータ)
 float pitch;			// ピッチ角
+bool mode_pointing_ini_pose_on_rviz;
 
 
 
@@ -286,6 +287,7 @@ void printParam(void){
 	printf("	Sig_X		: %lf\n", s_ndt[0]);	ndt_sig[0] = s_ndt[0];
 	printf("	Sig_Y		: %lf\n", s_ndt[1]);	ndt_sig[1] = s_ndt[1];
 	printf("	Sig_Yaw		: %lf\n", s_ndt[2]);
+	std::cout << "mode_pointing_ini_pose_on_rviz = " << (bool)mode_pointing_ini_pose_on_rviz << std::endl;
 }
 
 
@@ -324,6 +326,7 @@ int main(int argc, char** argv){
 	pnh.param<double>("NDT_sig_X", s_ndt[0], 0.0);
 	pnh.param<double>("NDT_sig_Y", s_ndt[1], 0.0);
 	pnh.param<double>("NDT_sig_Yaw", s_ndt[2], 0.0);
+	pnh.param<bool>("mode_pointing_ini_pose_on_rviz", mode_pointing_ini_pose_on_rviz, true);
 
 	printParam();
 	
@@ -331,6 +334,9 @@ int main(int argc, char** argv){
 	poseInit(ekf_odom);
 	static bool init_flag = true;
 	nav_msgs::Odometry vis_ekf;
+	if(!mode_pointing_ini_pose_on_rviz){
+		init_pose_flag = true;
+	}
 	
 	//時刻取得
 	gettimeofday(&last_time, NULL);
