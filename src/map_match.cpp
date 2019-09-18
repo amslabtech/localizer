@@ -28,17 +28,17 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
 	ndt.setMaximumIterations(35);
 
 	n.param("PARENT_FRAME", PARENT_FRAME, {"/map"});
-	n.param("CHILD_FRAME", CHILD_FRAME, {"/matching_base_link"});
+	/* n.param("CHILD_FRAME", CHILD_FRAME, {"/matching_base_link"}); */
 	private_nh_.param("VOXEL_SIZE",VOXEL_SIZE ,{0.3});
 	private_nh_.param("LIMIT_RANGE",LIMIT_RANGE, {20.0});
 
 	std::cout<<"PARENT_FRAME : "<<PARENT_FRAME<<std::endl;
-	std::cout<<"CHILD_FRAME : "<<CHILD_FRAME<<std::endl;
+	/* std::cout<<"CHILD_FRAME : "<<CHILD_FRAME<<std::endl; */
 	std::cout<<"VOXEL_SIZE: "<<VOXEL_SIZE<<std::endl;
 	std::cout<<"LIMIT_RANGE : "<<LIMIT_RANGE<<std::endl;
 
-	buffer_odom.header.frame_id = PARENT_FRAME;
-	buffer_odom.child_frame_id = CHILD_FRAME;
+	// buffer_odom.header.frame_id = PARENT_FRAME;
+	// buffer_odom.child_frame_id = CHILD_FRAME;
 }
 
 
