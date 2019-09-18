@@ -11,7 +11,7 @@
  */
 
 
-//Library
+/*Library*/
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <iostream>
@@ -23,37 +23,38 @@
 #include <sys/time.h>
 #include "EKF.h"
 
-//msgs
+/*msgs*/
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
 
+/*namespace*/
 using namespace std;
 using namespace Eigen;
-EKF ekf;
 
+/*flag*/
 bool init_pose_flag = false;
 bool imu_flag = false;
 bool odom_flag = false;
 bool ndt_flag = false;
 
-
+/*global variable*/
+EKF ekf;
 nav_msgs::Odometry ekf_odom;
-
-
 MatrixXf x(3,1);		// 状態 (x,y,θ)
 MatrixXf Sigma(3,3);
 MatrixXf u(2,1);		// 制御 (v, w)
 MatrixXf obs_ndt(3,1);	// NDT観測 (x,y,θ)
 
+/*param*/
 double init_x[3];		// 初期状態 (x,y,θ) [rad]
 double init_sig[3];		// 初期分散 (sig_x, sig_y, sig_yaw)
 double s_ndt[3]; 		// NDT観測値の分散 (sig_x, sig_y, sig_yaw)
 double ndt_sig[2];
 double s_input[4]; 		// 制御の誤差パラメータ (要素数[0],[2]は並進速度，[1],[3]は回頭速度のパラメータ)
 float pitch;			// ピッチ角
+std::string parent_frame_id;
 bool mode_pointing_ini_pose_on_rviz;
-
 
 
 
@@ -164,6 +165,7 @@ void odomCallback(nav_msgs::Odometry msg){
 	u.coeffRef(0,0) = msg.twist.twist.linear.x;
     
     ekf_odom.twist.twist.linear.x = u.coeffRef(0,0);
+	ekf_odom.header.frame_id = msg.header.frame_id;
 	
 	odom_flag = true;
 }
@@ -250,8 +252,8 @@ void initposeCallback(const geometry_msgs::PoseStampedConstPtr& msg){
 
 
 void poseInit(nav_msgs::Odometry &msg){
-	msg.header.frame_id = "/map";
-	msg.child_frame_id = "/matching_base_link";
+	msg.header.frame_id = parent_frame_id;
+	/* msg.child_frame_id = "/matching_base_link"; */
 	msg.pose.pose.position.x = init_x[0];
 	msg.pose.pose.position.y = init_x[1];
 	msg.pose.pose.position.z = 0.0; 
@@ -326,6 +328,7 @@ int main(int argc, char** argv){
 	pnh.param<double>("NDT_sig_X", s_ndt[0], 0.0);
 	pnh.param<double>("NDT_sig_Y", s_ndt[1], 0.0);
 	pnh.param<double>("NDT_sig_Yaw", s_ndt[2], 0.0);
+	pnh.param<std::string>("parent_frame_id", parent_frame_id, std::string("/map"));
 	pnh.param<bool>("mode_pointing_ini_pose_on_rviz", mode_pointing_ini_pose_on_rviz, true);
 
 	printParam();
