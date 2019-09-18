@@ -165,7 +165,8 @@ void odomCallback(nav_msgs::Odometry msg){
 	u.coeffRef(0,0) = msg.twist.twist.linear.x;
     
     ekf_odom.twist.twist.linear.x = u.coeffRef(0,0);
-	ekf_odom.header.frame_id = msg.header.frame_id;
+	if(msg.child_frame_id=="")	ekf_odom.child_frame_id = "matching_base_link";
+	else	ekf_odom.child_frame_id = msg.child_frame_id;
 	
 	odom_flag = true;
 }
