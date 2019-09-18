@@ -4,7 +4,6 @@
         <!-- <rosparam file="$(find localizer)/config/ekf_sigs.yaml" /> -->
         <param file="$(find localizer)/config/ekf_sigs.yaml" />
         <param name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
-		
 		<!-- <remap from="/imu/data" to="/imu/data/calibrated" /> -->
 		<!-- <remap from="/odom" to="/tinypower/odom" /> -->
 	</node>
