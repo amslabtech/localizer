@@ -20,8 +20,8 @@ int main(int argc, char* argv[])
 	Matcher matcher(n,priv_nh);	
 
 	std::string map_file;
-	priv_nh.param("map_file", map_file, std::string("./example_data/d_kan_indoor.pcd"));
 	/* map_file = argv[1]; */
+	priv_nh.param("map_file", map_file, std::string("$(find localizer)/example_data/d_kan_indoor.pcd"));
 	matcher.map_read(map_file);
 	
 	while(ros::ok()){
