@@ -100,7 +100,8 @@ RUN echo "\
 # auto-git-pull
 RUN echo "\
 		#!/bin/bash\n\
-		roslaunch localizer badata_ttest.launch \
-	" >> /home/gitpull.sh
+		roslaunch localizer bagdata_test.launch \
+	" >> /home/ros_catkin_ws/src/localizer/bagdata_test.sh && \
+	chmod +x /home/ros_catkin_ws/src/localizer/bagdata_test.sh
 ######### initial position ##########
 WORKDIR /home/ros_catkin_ws/src/localizer
