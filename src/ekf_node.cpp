@@ -222,7 +222,7 @@ void initposeCallback(const geometry_msgs::PoseStampedConstPtr& msg){
 
 	static bool init_flag_ = true;
 
-	if(init_flag_){
+	if(init_flag_ && mode_pointing_ini_pose_on_rviz){
 
 		double qr,qp,qy;
 		tf::Quaternion quat(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
@@ -335,6 +335,10 @@ int main(int argc, char** argv){
 	static bool init_flag = true;
 	nav_msgs::Odometry vis_ekf;
 	if(!mode_pointing_ini_pose_on_rviz){
+		x << init_x[0], init_x[1], init_x[2];
+		obs_ndt.coeffRef(0,0) = init_x[0];
+		obs_ndt.coeffRef(1,0) = init_x[1];
+		obs_ndt.coeffRef(2,0) = init_x[2];
 		init_pose_flag = true;
 	}
 	
