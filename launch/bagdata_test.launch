@@ -8,6 +8,9 @@
 
 	<!-- rviz -->
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find localizer)/config/local.rviz"/>
+
+	<!-- sensor driver -->
+	<include file="$(find velodyne_pointcloud)/launch/32e_points.launch"/>
 	
 	<!-- main -->
 	<include file="$(find localizer)/launch/ekf.launch"/>
