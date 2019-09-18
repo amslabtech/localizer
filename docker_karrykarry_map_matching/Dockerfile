@@ -97,5 +97,10 @@ RUN echo "\
 	" >> /home/gitpull.sh && \
 	chmod +x /home/gitpull.sh && \
 	echo "/home/gitpull.sh" >> ~/.bashrc
+# auto-git-pull
+RUN echo "\
+		#!/bin/bash\n\
+		roslaunch localizer badata_ttest.launch \
+	" >> /home/gitpull.sh
 ######### initial position ##########
 WORKDIR /home/ros_catkin_ws/src/localizer
