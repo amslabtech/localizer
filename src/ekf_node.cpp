@@ -313,9 +313,9 @@ int main(int argc, char** argv){
 	struct timeval last_time, now_time;
 	
 	//パラメータ
-	pnh.param<double>("/init_x", init_x[0], 0.0);
-	pnh.param<double>("/init_y", init_x[1], 0.0);
-	pnh.param<double>("/init_yaw", init_x[2], -30.0);
+	pnh.param<double>("init_x", init_x[0], 0.0);
+	pnh.param<double>("init_y", init_x[1], 0.0);
+	pnh.param<double>("init_yaw", init_x[2], -30.0);
 	pnh.param<double>("init_sig_x", init_sig[0], 0.0);
 	pnh.param<double>("init_sig_y", init_sig[1], 0.0);
 	pnh.param<double>("init_sig_yaw", init_sig[2], 0.0);
