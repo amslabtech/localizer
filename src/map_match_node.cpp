@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 	Matcher matcher(n,priv_nh);	
 
 	std::string map_file;
-	nhPrivate.param("map_file", map_file, std::string("./example_data/d_kan_indoor.pcd"));
+	priv_nh.param("map_file", map_file, std::string("./example_data/d_kan_indoor.pcd"));
 	/* map_file = argv[1]; */
 	matcher.map_read(map_file);
 	
