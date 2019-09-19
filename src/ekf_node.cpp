@@ -59,15 +59,18 @@ bool mode_pointing_ini_pose_on_rviz;
 
 void InputOdomCov(nav_msgs::Odometry& odom)
 {
-	odom.pose.covariance[0] = Sigma(0, 0);
-	odom.pose.covariance[1] = Sigma(0, 1);
-	odom.pose.covariance[2] = Sigma(0, 2);
-	odom.pose.covariance[3] = Sigma(1, 0);
-	odom.pose.covariance[4] = Sigma(1, 1);
-	odom.pose.covariance[5] = Sigma(1, 2);
-	odom.pose.covariance[6] = Sigma(2, 0);
-	odom.pose.covariance[7] = Sigma(2, 1);
-	odom.pose.covariance[8] = Sigma(2, 2);
+	/*x*/
+	odom.pose.covariance[0] = Sigma(0, 0);	//x
+	odom.pose.covariance[1] = Sigma(0, 1);	//y
+	odom.pose.covariance[5] = Sigma(0, 2);	//yaw
+	/*y*/
+	odom.pose.covariance[6] = Sigma(1, 0);	//x
+	odom.pose.covariance[7] = Sigma(1, 1);	//y
+	odom.pose.covariance[11] = Sigma(1, 2);	//yaw
+	/*yaw*/
+	odom.pose.covariance[30] = Sigma(2, 0);	//x
+	odom.pose.covariance[31] = Sigma(2, 1);	//y
+	odom.pose.covariance[35] = Sigma(2, 2);	//yaw
 }
 
 MatrixXf predict(MatrixXf x, MatrixXf u, float dt, double *s_input, float pitch){
