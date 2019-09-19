@@ -57,6 +57,12 @@ std::string parent_frame_id;
 bool mode_pointing_ini_pose_on_rviz;
 
 
+void InputOdomCov(nav_msgs::Odometry& odom)
+{
+	odom.pose.covariance[0] = Sigma(0, 0);
+	odom.pose.covariance[1] = Sigma(0, 1);
+	odom.pose.covariance[2] = Sigma(0, 2);
+}
 
 MatrixXf predict(MatrixXf x, MatrixXf u, float dt, double *s_input, float pitch){
 	/* u   : (v, w)の転置行列 v:並進速度, w:角速度
@@ -165,6 +171,8 @@ void odomCallback(nav_msgs::Odometry msg){
 	u.coeffRef(0,0) = msg.twist.twist.linear.x;
     
     ekf_odom.twist.twist.linear.x = u.coeffRef(0,0);
+	
+	/*input frame_id*/
 	if(msg.child_frame_id=="")	ekf_odom.child_frame_id = "matching_base_link";
 	else	ekf_odom.child_frame_id = msg.child_frame_id;
 	
@@ -373,6 +381,9 @@ int main(int argc, char** argv){
 				imu_flag = odom_flag = ndt_flag = false;
 
 			}
+
+			/*input odom covariance*/
+			InputOdomCov(ekf_odom);
 
 			ekf_odom.pose.pose.position.x = x.coeffRef(0,0);
 			ekf_odom.pose.pose.position.y = x.coeffRef(1,0);
