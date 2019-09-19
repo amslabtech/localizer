@@ -62,6 +62,12 @@ void InputOdomCov(nav_msgs::Odometry& odom)
 	odom.pose.covariance[0] = Sigma(0, 0);
 	odom.pose.covariance[1] = Sigma(0, 1);
 	odom.pose.covariance[2] = Sigma(0, 2);
+	odom.pose.covariance[3] = Sigma(1, 0);
+	odom.pose.covariance[4] = Sigma(1, 1);
+	odom.pose.covariance[5] = Sigma(1, 2);
+	odom.pose.covariance[6] = Sigma(2, 0);
+	odom.pose.covariance[7] = Sigma(2, 1);
+	odom.pose.covariance[8] = Sigma(2, 2);
 }
 
 MatrixXf predict(MatrixXf x, MatrixXf u, float dt, double *s_input, float pitch){
