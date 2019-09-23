@@ -97,7 +97,7 @@ RUN echo "\
 	" >> /home/gitpull.sh && \
 	chmod +x /home/gitpull.sh && \
 	echo "/home/gitpull.sh" >> ~/.bashrc
-# auto-git-pull
+# script
 RUN echo "\
 		#!/bin/bash\n\
 		roslaunch localizer bagdata_test.launch \
