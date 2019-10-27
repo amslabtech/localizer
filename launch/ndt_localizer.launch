@@ -6,7 +6,6 @@
     <arg name="init_yaw" default="0.0"/>
     <arg name="map_file" default="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
     <arg name="map_frame" default="map"/>
-    <arg name="use_orientation_z_as_yaw" default="false"/>
     <arg name="matching_score_threshold" default="0.5"/>
 
     <group ns="ndt_localizer">
