@@ -374,6 +374,7 @@ int main(int argc, char** argv){
     ros::Rate loop(50);
     while(ros::ok()){
         if(init_pose_flag){
+            std::cout << "--- ndt odom ekf ---" << std::endl;
             if(imu_flag && odom_flag){
                 if(init_flag){
                     //時刻取得
@@ -385,7 +386,9 @@ int main(int argc, char** argv){
                     gettimeofday(&now_time, NULL);
                     dt = (now_time.tv_sec + now_time.tv_usec*1.0e-6) - (last_time.tv_sec + last_time.tv_usec*1.0e-6);
                 }
+                std::cout << "before prediction: " << x.transpose() << std::endl;
                 x = predict(x, u, dt, s_input, pitch);
+                std::cout << "after prediction: " << x.transpose() << std::endl;
 
                 if(ndt_flag){
                     x= NDTUpdate(x);
@@ -397,18 +400,15 @@ int main(int argc, char** argv){
             }
 
             /*input odom covariance*/
+            std::cout << "P: \n" << Sigma << std::endl;
             InputOdomCov(ekf_odom);
 
             ekf_odom.pose.pose.position.x = x.coeffRef(0,0);
             ekf_odom.pose.pose.position.y = x.coeffRef(1,0);
-            ekf_odom.pose.pose.orientation.z = x.coeffRef(2,0);
-            ekf_odom.pose.pose.orientation.w = 0.0;
-            // ekf_odom.header.stamp = ros::Time::now(); //
+            ekf_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(x.coeffRef(2, 0));
             ekf_pub.publish(ekf_odom);
 
             vis_ekf = ekf_odom;
-            vis_ekf.pose.pose.orientation.z = sin(x.coeffRef(2,0) * 0.5);
-            vis_ekf.pose.pose.orientation.w = cos(x.coeffRef(2,0) * 0.5);
             vis_ekf_pub.publish(vis_ekf);
         }
 
