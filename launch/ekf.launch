@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="localizer" type="ekf" name="ekf" output="screen">
-        <rosparam file="$(find localizer)/config/ekf_sigs.yaml" />
+    <node pkg="ndt_localizer" type="ekf" name="ekf" output="screen">
+        <rosparam file="$(find ndt_localizer)/config/ekf_sigs.yaml" />
         <param name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
-		<param name="parent_frame_name" type="string" value="/map"/>	
-		
-		<!-- <remap from="/imu/data" to="/imu/data/calibrated" /> -->
-		<!-- <remap from="/odom" to="/tinypower/odom" /> -->
-	</node>
+        <param name="parent_frame_name" type="string" value="/map"/>
+
+        <!-- <remap from="/imu/data" to="/imu/data/calibrated" /> -->
+        <!-- <remap from="/odom" to="/tinypower/odom" /> -->
+    </node>
 </launch>
 
