@@ -6,6 +6,7 @@
     <arg name="init_yaw" default="0.0"/>
     <arg name="map_file" default="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
     <arg name="map_frame" default="map"/>
+    <arg name="use_orientation_z_as_yaw" default="false"/>
 
     <group ns="ndt_localizer">
         <node pkg="ndt_localizer" type="map_match" name="map_match">
@@ -13,6 +14,7 @@
             <param name="MAP_FILE" type="string" value="$(arg map_file)"/>
             <param name="VOXEL_SIZE" value="0.3" />
             <param name="LIMIT_RANGE" value="20.0" />
+            <param name="USE_ORIENTATION_Z_AS_YAW" value="$(arg use_orientation_z_as_yaw)" />
         </node>
 
         <node pkg="ndt_localizer" type="ekf" name="ekf">

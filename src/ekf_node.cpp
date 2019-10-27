@@ -212,7 +212,7 @@ void ndtCallback(nav_msgs::Odometry msg){
     obs_ndt.coeffRef(0,0) = msg.pose.pose.position.x;
     obs_ndt.coeffRef(1,0) = msg.pose.pose.position.y;
 
-    float yaw_true = expand(msg.pose.pose.orientation.z);
+    float yaw_true = expand(tf::getYaw(msg.pose.pose.orientation));
     obs_ndt.coeffRef(2,0) = yaw_true;
 
     ndt_flag = true;

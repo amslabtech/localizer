@@ -31,11 +31,13 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     /* n.param("CHILD_FRAME", CHILD_FRAME, {"/matching_base_link"}); */
     private_nh_.param("VOXEL_SIZE",VOXEL_SIZE ,{0.3});
     private_nh_.param("LIMIT_RANGE",LIMIT_RANGE, {20.0});
+    private_nh_.param("USE_ORIENTATION_Z_AS_YAW", USE_ORIENTATION_Z_AS_YAW, {false});
 
     std::cout<<"PARENT_FRAME : "<<PARENT_FRAME<<std::endl;
     /* std::cout<<"CHILD_FRAME : "<<CHILD_FRAME<<std::endl; */
     std::cout<<"VOXEL_SIZE: "<<VOXEL_SIZE<<std::endl;
     std::cout<<"LIMIT_RANGE : "<<LIMIT_RANGE<<std::endl;
+    std::cout<<"USE_ORIENTATION_Z_AS_YAW: "<<USE_ORIENTATION_Z_AS_YAW<<std::endl;
 
     // buffer_odom.header.frame_id = PARENT_FRAME;
     // buffer_odom.child_frame_id = CHILD_FRAME;
@@ -89,10 +91,11 @@ void
 Matcher::odomcallback(const nav_msgs::OdometryConstPtr& msg){
     is_start = true;
     buffer_odom = *msg;
+    if(USE_ORIENTATION_Z_AS_YAW){
+        buffer_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(buffer_odom.pose.pose.orientation.z);
+    }
 
 }
-
-
 
 Eigen::Matrix4f
 Matcher::ndt_matching(
@@ -116,7 +119,7 @@ Matcher::ndt_matching(
     std::cout << "downsampled source cloud: " << filtered_cloud_src->points.size() << std::endl;
     std::cout << "downsampled target cloud: " << filtered_cloud_tgt->points.size() << std::endl;
 
-    Eigen::AngleAxisf init_rotation (odo.pose.pose.orientation.z , Eigen::Vector3f::UnitZ ());
+    Eigen::AngleAxisf init_rotation (tf::getYaw(odo.pose.pose.orientation) , Eigen::Vector3f::UnitZ ());
     Eigen::Translation3f init_translation (odo.pose.pose.position.x, odo.pose.pose.position.y, odo.pose.pose.position.z);
 
     Eigen::Matrix4f init_guess = (init_translation * init_rotation).matrix ();
@@ -180,7 +183,7 @@ Matcher::process(){
 
     buffer_odom.pose.pose.position.x =  answer(0, 3);
     buffer_odom.pose.pose.position.y =  answer(1, 3);
-    buffer_odom.pose.pose.orientation.z = ans_yaw;
+    buffer_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(ans_yaw);
 
     odom_pub.publish(buffer_odom);
 
