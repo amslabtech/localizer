@@ -4,11 +4,13 @@
     <arg name="init_x" default="0.0"/>
     <arg name="init_y" default="0.0"/>
     <arg name="init_yaw" default="0.0"/>
+    <arg name="map_file" default="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
+    <arg name="map_frame" default="map"/>
 
     <group ns="ndt_localizer">
         <node pkg="ndt_localizer" type="map_match" name="map_match">
-            <param name="PARENT_FRAME" value="/map" />
-            <param name="map_file" type="string" value="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
+            <param name="PARENT_FRAME" value="$(arg map_frame)" />
+            <param name="MAP_FILE" type="string" value="$(arg map_file)"/>
             <param name="VOXEL_SIZE" value="0.3" />
             <param name="LIMIT_RANGE" value="20.0" />
         </node>
@@ -19,7 +21,7 @@
             <param name="INIT_Y" value="$(arg init_y)"/>
             <param name="INIT_YAW" value="$(arg init_yaw)"/>
             <param name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
-            <param name="parent_frame_name" type="string" value="/map"/>
+            <param name="parent_frame_name" type="string" value="$(arg map_frame)"/>
             <remap from="/imu/data" to="/imu/data" />
             <remap from="/odom" to="/odom" />
         </node>

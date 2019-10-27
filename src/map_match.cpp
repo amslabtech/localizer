@@ -27,7 +27,7 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     ndt.setResolution(1.0);//1.0 change 05/09
     ndt.setMaximumIterations(35);
 
-    n.param("PARENT_FRAME", PARENT_FRAME, {"/map"});
+    private_nh_.param("PARENT_FRAME", PARENT_FRAME, {"/map"});
     /* n.param("CHILD_FRAME", CHILD_FRAME, {"/matching_base_link"}); */
     private_nh_.param("VOXEL_SIZE",VOXEL_SIZE ,{0.3});
     private_nh_.param("LIMIT_RANGE",LIMIT_RANGE, {20.0});
@@ -51,6 +51,7 @@ Matcher::map_read(std::string filename){
         PCL_ERROR ("事前地図ないよ \n");
     else
         std::cout<<"\x1b[32m"<<"読み込んだファイル："<<filename<<"\x1b[m\r"<<std::endl;
+    low_map_cloud->header.frame_id = PARENT_FRAME;
 
     pcl::ApproximateVoxelGrid<pcl::PointXYZI> approximate_voxel_filter;
 
