@@ -56,7 +56,7 @@ Matcher::map_read(std::string filename){
     std::cout<< "\x1b[32m" << "map has been loaded from : "<< filename << "\x1b[m\r" <<std::endl;
     std::cout << "raw map points: " << low_map_cloud->points.size() << std::endl;
 
-    pcl::ApproximateVoxelGrid<pcl::PointXYZI> approximate_voxel_filter;
+    pcl::ApproximateVoxelGrid<pcl::PointXYZI> voxel_filter;
     // pcl::VoxelGrid<pcl::PointXYZI> voxel_filter;
 
     voxel_filter.setLeafSize (VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
