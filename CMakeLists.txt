@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(localizer)
+project(ndt_localizer)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -23,8 +23,8 @@ find_package(OpenCV 3 REQUIRED)
 find_package(PCL 1.8.0 REQUIRED)
 find_package(OpenMP)
 if(OPENMP_FOUND)
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
 
@@ -115,7 +115,7 @@ endif()
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES localizer
+#  LIBRARIES ndt_localizer
 #  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs tf
 #  DEPENDS system_lib
 )
@@ -127,10 +127,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 
-include_directories(include/localizer)
+include_directories(include/ndt_localizer)
 
 include_directories(
-	include
+    include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
 )
@@ -178,9 +178,9 @@ add_executable(drift_imu src/drift_imu.cpp)
 target_link_libraries(drift_imu ${catkin_LIBRARIES})
 
 add_executable(map_match src/map_match_node.cpp src/map_match.cpp)
-target_link_libraries(map_match 
-	${catkin_LIBRARIES}
-	${PCL_LIBRARIES}
+target_link_libraries(map_match
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
 )
 
 
