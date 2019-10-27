@@ -20,7 +20,6 @@
 #include <Eigen/LU>
 #include <geometry_msgs/Quaternion.h>
 #include <sensor_msgs/Imu.h>
-#include <sys/time.h>
 #include "ndt_localizer/EKF.h"
 
 /*msgs*/
@@ -335,7 +334,7 @@ int main(int argc, char** argv){
     ros::Publisher vis_ekf_pub = n.advertise<nav_msgs::Odometry>("/vis/odometry", 100);
 
     float dt;
-    struct timeval last_time, now_time;
+    double last_time, now_time;
 
     //パラメータ
     pnh.param<double>("INIT_X", init_x[0], 0.0);
@@ -368,24 +367,23 @@ int main(int argc, char** argv){
         init_pose_flag = true;
     }
 
-    //時刻取得
-    gettimeofday(&last_time, NULL);
+    last_time = ros::Time::now().toSec();
 
-    ros::Rate loop(50);
+    const double HZ = 50.0;
+    ros::Rate loop(HZ);
     while(ros::ok()){
         if(init_pose_flag){
             std::cout << "--- ndt odom ekf ---" << std::endl;
             if(imu_flag && odom_flag){
                 if(init_flag){
-                    //時刻取得
-                    gettimeofday(&now_time, NULL);
-                    dt = 0.02;
+                    now_time = ros::Time::now().toSec();
+                    dt = 1.0 / HZ;
                     init_flag = false;
                 }else{
-                    //時刻取得
-                    gettimeofday(&now_time, NULL);
-                    dt = (now_time.tv_sec + now_time.tv_usec*1.0e-6) - (last_time.tv_sec + last_time.tv_usec*1.0e-6);
+                    now_time = ros::Time::now().toSec();
+                    dt = now_time - last_time;
                 }
+                std::cout << "dt: " << dt << "[s]" << std::endl;
                 std::cout << "before prediction: " << x.transpose() << std::endl;
                 x = predict(x, u, dt, s_input, pitch);
                 std::cout << "after prediction: " << x.transpose() << std::endl;
@@ -396,7 +394,6 @@ int main(int argc, char** argv){
 
                 last_time = now_time;
                 imu_flag = odom_flag = ndt_flag = false;
-
             }
 
             /*input odom covariance*/
