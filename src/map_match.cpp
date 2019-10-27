@@ -31,13 +31,12 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     /* n.param("CHILD_FRAME", CHILD_FRAME, {"/matching_base_link"}); */
     private_nh_.param("VOXEL_SIZE",VOXEL_SIZE ,{0.3});
     private_nh_.param("LIMIT_RANGE",LIMIT_RANGE, {20.0});
-    private_nh_.param("USE_ORIENTATION_Z_AS_YAW", USE_ORIENTATION_Z_AS_YAW, {false});
+    private_nh_.param("MATCHING_SCORE_THRESHOLD", MATCHING_SCORE_THRESHOLD, {0.1});
 
     std::cout<<"PARENT_FRAME : "<<PARENT_FRAME<<std::endl;
     /* std::cout<<"CHILD_FRAME : "<<CHILD_FRAME<<std::endl; */
     std::cout<<"VOXEL_SIZE: "<<VOXEL_SIZE<<std::endl;
     std::cout<<"LIMIT_RANGE : "<<LIMIT_RANGE<<std::endl;
-    std::cout<<"USE_ORIENTATION_Z_AS_YAW: "<<USE_ORIENTATION_Z_AS_YAW<<std::endl;
 
     // buffer_odom.header.frame_id = PARENT_FRAME;
     // buffer_odom.child_frame_id = CHILD_FRAME;
@@ -91,10 +90,6 @@ void
 Matcher::odomcallback(const nav_msgs::OdometryConstPtr& msg){
     is_start = true;
     buffer_odom = *msg;
-    if(USE_ORIENTATION_Z_AS_YAW){
-        buffer_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(buffer_odom.pose.pose.orientation.z);
-    }
-
 }
 
 Eigen::Matrix4f
@@ -177,24 +172,27 @@ Matcher::process(){
 
     Eigen::Matrix4f answer = ndt_matching(local_map_cloud,local_lidar_cloud, ndt_cloud,buffer_odom);
 
-    double ans_yaw;
+    if(ndt.getFitnessScore() < MATCHING_SCORE_THRESHOLD){
+        double ans_yaw;
 
-    calc_rpy(answer,ans_yaw);
+        calc_rpy(answer,ans_yaw);
 
-    buffer_odom.pose.pose.position.x =  answer(0, 3);
-    buffer_odom.pose.pose.position.y =  answer(1, 3);
-    buffer_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(ans_yaw);
+        buffer_odom.pose.pose.position.x =  answer(0, 3);
+        buffer_odom.pose.pose.position.y =  answer(1, 3);
+        buffer_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(ans_yaw);
 
-    odom_pub.publish(buffer_odom);
+        odom_pub.publish(buffer_odom);
 
 
-    sensor_msgs::PointCloud2 vis_pc;
-    pcl::toROSMsg(*ndt_cloud , vis_pc);
+        sensor_msgs::PointCloud2 vis_pc;
+        pcl::toROSMsg(*ndt_cloud , vis_pc);
 
-    vis_pc.header.stamp = buffer_time;
-    vis_pc.header.frame_id = PARENT_FRAME;
+        vis_pc.header.stamp = buffer_time;
+        vis_pc.header.frame_id = PARENT_FRAME;
 
-    pc_pub.publish(vis_pc);
-
+        pc_pub.publish(vis_pc);
+    }else{
+        std::cout << "\033[31mmathcing result is not used due to high sum of squared distance between clouds\033[0m" << std::endl;
+    }
 }
 

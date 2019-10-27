@@ -38,7 +38,7 @@ class Matcher{
 
         std::string PARENT_FRAME, CHILD_FRAME;
         double VOXEL_SIZE, LIMIT_RANGE;
-        bool USE_ORIENTATION_Z_AS_YAW;
+        double MATCHING_SCORE_THRESHOLD;
 
         ros::Time buffer_time;
         sensor_msgs::PointCloud2 buffer_pc;
