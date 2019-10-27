@@ -182,8 +182,13 @@ void odomCallback(nav_msgs::Odometry msg){
     ekf_odom.twist.twist.linear.x = u.coeffRef(0,0);
 
     /*input frame_id*/
-    if(msg.child_frame_id=="")  ekf_odom.child_frame_id = "matching_base_link";
-    else    ekf_odom.child_frame_id = msg.child_frame_id;
+    if(msg.child_frame_id != ""){
+        ekf_odom.child_frame_id = msg.child_frame_id;
+    }
+    else{
+        ekf_odom.child_frame_id = "/base_link";
+        std::cout << "\033[33mchild_frame_id should be set. default '/base_link' is used\033[0m" << std::endl;
+    }
 
     odom_flag = true;
 }
@@ -333,9 +338,9 @@ int main(int argc, char** argv){
     struct timeval last_time, now_time;
 
     //パラメータ
-    pnh.param<double>("init_x", init_x[0], 0.0);
-    pnh.param<double>("init_y", init_x[1], 0.0);
-    pnh.param<double>("init_yaw", init_x[2], -30.0);
+    pnh.param<double>("INIT_X", init_x[0], 0.0);
+    pnh.param<double>("INIT_Y", init_x[1], 0.0);
+    pnh.param<double>("INIT_YAW", init_x[2], -30.0);
     pnh.param<double>("init_sig_x", init_sig[0], 0.0);
     pnh.param<double>("init_sig_y", init_sig[1], 0.0);
     pnh.param<double>("init_sig_yaw", init_sig[2], 0.0);

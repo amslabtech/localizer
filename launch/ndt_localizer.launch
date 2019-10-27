@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="init_x" default="0.0"/>
+    <arg name="init_y" default="0.0"/>
+    <arg name="init_yaw" default="0.0"/>
+
+    <group ns="ndt_localizer">
+        <node pkg="ndt_localizer" type="map_match" name="map_match">
+            <param name="PARENT_FRAME" value="/map" />
+            <param name="map_file" type="string" value="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
+            <param name="VOXEL_SIZE" value="0.3" />
+            <param name="LIMIT_RANGE" value="20.0" />
+        </node>
+
+        <node pkg="ndt_localizer" type="ekf" name="ekf">
+            <rosparam file="$(find ndt_localizer)/config/ekf_sigs.yaml" />
+            <param name="INIT_X" value="$(arg init_x)"/>
+            <param name="INIT_Y" value="$(arg init_y)"/>
+            <param name="INIT_YAW" value="$(arg init_yaw)"/>
+            <param name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
+            <param name="parent_frame_name" type="string" value="/map"/>
+            <remap from="/imu/data" to="/imu/data" />
+            <remap from="/odom" to="/odom" />
+        </node>
+    </group>
+
+</launch>
+
+
