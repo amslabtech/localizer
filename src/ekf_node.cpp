@@ -14,6 +14,8 @@
 /*Library*/
 #include <ros/ros.h>
 #include <tf/tf.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include <iostream>
 #include <math.h>
 #include <Eigen/Core>
@@ -37,6 +39,9 @@ bool imu_flag = false;
 bool odom_flag = false;
 bool ndt_flag = false;
 
+std::string map_frame_id = "map";
+std::string odom_frame_id = "odom";
+
 /*global variable*/
 EKF ekf;
 nav_msgs::Odometry ekf_odom;
@@ -54,7 +59,9 @@ double s_input[4];      // 制御の誤差パラメータ (要素数[0],[2]は�
 float pitch;            // ピッチ角
 std::string parent_frame_id;
 bool mode_pointing_ini_pose_on_rviz;
+bool ENABLE_TF, ENABLE_ODOM_TF;
 
+tf::TransformBroadcaster* broadcaster_ptr = NULL;
 
 void InputOdomCov(nav_msgs::Odometry& odom)
 {
@@ -178,6 +185,7 @@ float expand(float after){
 void odomCallback(nav_msgs::Odometry msg){
     u.coeffRef(0,0) = msg.twist.twist.linear.x;
 
+    ekf_odom.header.stamp = msg.header.stamp; //
     ekf_odom.twist.twist.linear.x = u.coeffRef(0,0);
 
     /*input frame_id*/
@@ -189,6 +197,37 @@ void odomCallback(nav_msgs::Odometry msg){
         std::cout << "\033[33mchild_frame_id should be set. default '/base_link' is used\033[0m" << std::endl;
     }
 
+    odom_frame_id = msg.header.frame_id;
+
+    if(ENABLE_ODOM_TF){
+        static Eigen::Vector3d first_odom_pose = Eigen::Vector3d::Zero();
+        static double first_odom_yaw = 0;
+        static bool first_odom_flag = true;
+        Eigen::Vector3d odom_pose;
+        double odom_yaw = tf::getYaw(msg.pose.pose.orientation);
+        odom_pose << msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z;
+        if(first_odom_flag){
+            first_odom_pose = odom_pose;
+            first_odom_yaw = odom_yaw;
+            std::cout << "first odom pose: \n" << first_odom_pose << std::endl;
+            first_odom_flag = false;
+        }
+        odom_pose -= first_odom_pose;
+        Eigen::AngleAxis<double> first_odom_yaw_rotation(-first_odom_yaw, Eigen::Vector3d::UnitZ());
+        odom_pose = first_odom_yaw_rotation * odom_pose;
+        odom_yaw -= first_odom_yaw;
+        odom_yaw = atan2(sin(odom_yaw), cos(odom_yaw));
+        tf::Transform transform;
+        transform.setOrigin(tf::Vector3(odom_pose(0), odom_pose(1), odom_pose(2)));
+        tf::Quaternion q;
+        q.setRPY(0, 0, odom_yaw);
+        transform.setRotation(q);
+        std::cout << "odom callback: \n" << msg.header.stamp << std::endl;
+        tf::StampedTransform odom_tf(transform, msg.header.stamp, odom_frame_id, msg.child_frame_id);
+        if(broadcaster_ptr != NULL){
+            broadcaster_ptr->sendTransform(odom_tf);
+        }
+    }
     odom_flag = true;
 }
 
@@ -200,7 +239,7 @@ void imuCallback(sensor_msgs::Imu::ConstPtr msg){
 
     pitch = 0;
     imu_flag = true;
-    ekf_odom.header.stamp = msg->header.stamp; //
+    // ekf_odom.header.stamp = msg->header.stamp; //
 
 }
 
@@ -214,6 +253,7 @@ void ndtCallback(nav_msgs::Odometry msg){
     float yaw_true = expand(tf::getYaw(msg.pose.pose.orientation));
     obs_ndt.coeffRef(2,0) = yaw_true;
 
+    map_frame_id = msg.header.frame_id;
     ndt_flag = true;
 }
 
@@ -312,6 +352,8 @@ void printParam(void){
     printf("    Sig_Y       : %lf\n", s_ndt[1]);    ndt_sig[1] = s_ndt[1];
     printf("    Sig_Yaw     : %lf\n", s_ndt[2]);
     std::cout << "mode_pointing_ini_pose_on_rviz = " << (bool)mode_pointing_ini_pose_on_rviz << std::endl;
+    std::cout << "ENABLE_TF = " << (bool)ENABLE_TF << std::endl;
+    std::cout << "ENABLE_ODOM_TF = " << (bool)ENABLE_ODOM_TF << std::endl;
 }
 
 
@@ -333,6 +375,10 @@ int main(int argc, char** argv){
     ros::Publisher ekf_pub = n.advertise<nav_msgs::Odometry>("/EKF/result", 100);
     ros::Publisher vis_ekf_pub = n.advertise<nav_msgs::Odometry>("/vis/odometry", 100);
 
+    tf::TransformBroadcaster broadcaster;
+    broadcaster_ptr = &broadcaster;
+    tf::TransformListener listener;
+
     float dt;
     double last_time, now_time;
 
@@ -352,6 +398,8 @@ int main(int argc, char** argv){
     pnh.param<double>("NDT_sig_Yaw", s_ndt[2], 0.0);
     pnh.param<std::string>("parent_frame_id", parent_frame_id, std::string("/map"));
     pnh.param<bool>("mode_pointing_ini_pose_on_rviz", mode_pointing_ini_pose_on_rviz, true);
+    pnh.param<bool>("ENABLE_TF", ENABLE_TF, {false});
+    pnh.param<bool>("ENABLE_ODOM_TF", ENABLE_ODOM_TF, {false});
 
     printParam();
 
@@ -369,7 +417,7 @@ int main(int argc, char** argv){
 
     last_time = ros::Time::now().toSec();
 
-    const double HZ = 50.0;
+    const double HZ = 20.0;
     ros::Rate loop(HZ);
     while(ros::ok()){
         if(init_pose_flag){
@@ -404,6 +452,21 @@ int main(int argc, char** argv){
             ekf_odom.pose.pose.position.y = x.coeffRef(1,0);
             ekf_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(x.coeffRef(2, 0));
             ekf_pub.publish(ekf_odom);
+
+            if(ENABLE_TF){
+                try{
+                    std::cout << "ekf_odom time: \n" << ekf_odom.header.stamp << std::endl;
+                    tf::Transform map_to_robot;
+                    tf::poseMsgToTF(ekf_odom.pose.pose, map_to_robot);
+                    tf::Stamped<tf::Pose> robot_to_map(map_to_robot.inverse(), ekf_odom.header.stamp, ekf_odom.child_frame_id);
+                    tf::Stamped<tf::Pose> odom_to_map;
+                    listener.transformPose(odom_frame_id, robot_to_map, odom_to_map);
+                    broadcaster.sendTransform(tf::StampedTransform(odom_to_map.inverse(), ekf_odom.header.stamp, map_frame_id, odom_frame_id));
+                    // broadcaster.sendTransform(tf::StampedTransform(map_to_robot, ekf_odom.header.stamp, map_frame_id, ekf_odom.child_frame_id));
+                }catch(tf::TransformException ex){
+                    std::cout << ex.what() << std::endl;
+                }
+            }
 
             vis_ekf = ekf_odom;
             vis_ekf_pub.publish(vis_ekf);
