@@ -9,4 +9,5 @@ nvidia-docker run -it --rm \
 	--env="QT_X11_NO_MITSHM=1" \
 	--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
 	--net=host \
-	$image_name:latest
+	karrykarry_ndt_localizer:latest
+	# $image_name:latest

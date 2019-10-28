@@ -77,11 +77,11 @@ RUN	apt-get update && apt-get install -y libpcap0.8-dev && \
 ########## MAIN ##########
 # main
 RUN	cd /home/ros_catkin_ws/src && \
-	git clone https://github.com/amslabtech/localizer &&\
+	git clone https://github.com/amslabtech/ndt_localizer &&\
 	cd /home/ros_catkin_ws && \
 	/bin/bash -c "source /opt/ros/kinetic/setup.bash; catkin_make"
 # bagfile 
-RUN cd /home/ros_catkin_ws/src/localizer/example_data && \
+RUN cd /home/ros_catkin_ws/src/ndt_localizer/example_data && \
 	FILE_ID=1BaPeG6ogi5xXnTieIbWilvUuJZT4bIzt && \
 	FILE_NAME=d_kan_indoor.bag && \
 	curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" > /dev/null && \
@@ -90,7 +90,7 @@ RUN cd /home/ros_catkin_ws/src/localizer/example_data && \
 # auto-git-pull
 RUN echo "\
 		#!/bin/bash\n\
-		cd /home/ros_catkin_ws/src/localizer &&\n\
+		cd /home/ros_catkin_ws/src/ndt_localizer &&\n\
 		git pull origin master &&\n\
 		cd /home/ros_catkin_ws &&\n\
 		catkin_make\
@@ -100,8 +100,8 @@ RUN echo "\
 # script
 RUN echo "\
 		#!/bin/bash\n\
-		roslaunch localizer bagdata_test.launch \
-	" >> /home/ros_catkin_ws/src/localizer/bagdata_test.sh && \
-	chmod +x /home/ros_catkin_ws/src/localizer/bagdata_test.sh
+		roslaunch ndt_localizer bagdata_test.launch \
+	" >> /home/ros_catkin_ws/src/ndt_localizer/bagdata_test.sh && \
+	chmod +x /home/ros_catkin_ws/src/ndt_localizer/bagdata_test.sh
 ######### initial position ##########
-WORKDIR /home/ros_catkin_ws/src/localizer
+WORKDIR /home/ros_catkin_ws/src/ndt_localizer
