@@ -32,11 +32,23 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     private_nh_.param("VOXEL_SIZE",VOXEL_SIZE ,{0.3});
     private_nh_.param("LIMIT_RANGE",LIMIT_RANGE, {20.0});
     private_nh_.param("MATCHING_SCORE_THRESHOLD", MATCHING_SCORE_THRESHOLD, {0.1});
+    private_nh_.param("CLOUD_MAP_OFFSET_X", CLOUD_MAP_OFFSET_X, {0.0});
+    private_nh_.param("CLOUD_MAP_OFFSET_Y", CLOUD_MAP_OFFSET_Y, {0.0});
+    private_nh_.param("CLOUD_MAP_OFFSET_Z", CLOUD_MAP_OFFSET_Z, {0.0});
+    private_nh_.param("CLOUD_MAP_OFFSET_ROLL", CLOUD_MAP_OFFSET_ROLL, {0.0});
+    private_nh_.param("CLOUD_MAP_OFFSET_PITCH", CLOUD_MAP_OFFSET_PITCH, {0.0});
+    private_nh_.param("CLOUD_MAP_OFFSET_YAW", CLOUD_MAP_OFFSET_YAW, {0.0});
 
     std::cout<<"PARENT_FRAME : "<<PARENT_FRAME<<std::endl;
     /* std::cout<<"CHILD_FRAME : "<<CHILD_FRAME<<std::endl; */
     std::cout<<"VOXEL_SIZE: "<<VOXEL_SIZE<<std::endl;
     std::cout<<"LIMIT_RANGE : "<<LIMIT_RANGE<<std::endl;
+    std::cout<<"CLOUD_MAP_OFFSET_X : "<< CLOUD_MAP_OFFSET_X <<std::endl;
+    std::cout<<"CLOUD_MAP_OFFSET_Y : "<< CLOUD_MAP_OFFSET_Y <<std::endl;
+    std::cout<<"CLOUD_MAP_OFFSET_Z : "<< CLOUD_MAP_OFFSET_Z <<std::endl;
+    std::cout<<"CLOUD_MAP_OFFSET_ROLL : "<< CLOUD_MAP_OFFSET_ROLL <<std::endl;
+    std::cout<<"CLOUD_MAP_OFFSET_PITCH : "<< CLOUD_MAP_OFFSET_PITCH <<std::endl;
+    std::cout<<"CLOUD_MAP_OFFSET_YAW : "<< CLOUD_MAP_OFFSET_YAW <<std::endl;
 
     // buffer_odom.header.frame_id = PARENT_FRAME;
     // buffer_odom.child_frame_id = CHILD_FRAME;
@@ -65,6 +77,16 @@ Matcher::map_read(std::string filename){
     voxel_filter.filter (*map_cloud);
 
     std::cout << "downsampled map points: " << map_cloud->points.size() << std::endl;
+
+    Eigen::Matrix3d offset_rotation;
+    offset_rotation = Eigen::AngleAxisd(CLOUD_MAP_OFFSET_ROLL, Eigen::Vector3d::UnitX())
+                    * Eigen::AngleAxisd(CLOUD_MAP_OFFSET_PITCH, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(CLOUD_MAP_OFFSET_YAW, Eigen::Vector3d::UnitZ());
+    Eigen::Translation3d offset_translation(CLOUD_MAP_OFFSET_X, CLOUD_MAP_OFFSET_Y, CLOUD_MAP_OFFSET_Z);
+
+    Eigen::Affine3d cloud_map_offset = offset_rotation * offset_translation;
+    pcl::transformPointCloud(*map_cloud, *map_cloud, cloud_map_offset);
+    std::cout << "cloud origin in " << map_cloud->header.frame_id << ": \n" << cloud_map_offset.matrix() << std::endl;
 
     sensor_msgs::PointCloud2 vis_map;
     pcl::toROSMsg(*map_cloud , vis_map);

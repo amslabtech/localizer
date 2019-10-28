@@ -39,6 +39,12 @@ class Matcher{
         std::string PARENT_FRAME, CHILD_FRAME;
         double VOXEL_SIZE, LIMIT_RANGE;
         double MATCHING_SCORE_THRESHOLD;
+        double CLOUD_MAP_OFFSET_X;
+        double CLOUD_MAP_OFFSET_Y;
+        double CLOUD_MAP_OFFSET_Z;
+        double CLOUD_MAP_OFFSET_ROLL;
+        double CLOUD_MAP_OFFSET_PITCH;
+        double CLOUD_MAP_OFFSET_YAW;
 
         ros::Time buffer_time;
         sensor_msgs::PointCloud2 buffer_pc;
