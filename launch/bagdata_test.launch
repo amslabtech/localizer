@@ -13,7 +13,8 @@
     <include file="$(find velodyne_pointcloud)/launch/32e_points.launch"/>
 
     <!-- main -->
-    <include file="$(find ndt_localizer)/launch/ekf.launch"/>
-    <include file="$(find ndt_localizer)/launch/map_match.launch"/>
-    <include file="$(find ndt_localizer)/launch/tf_pub.launch"/>
+    <!-- <include file="$(find ndt_localizer)/launch/ekf.launch"/> -->
+    <!-- <include file="$(find ndt_localizer)/launch/map_match.launch"/> -->
+    <!-- <include file="$(find ndt_localizer)/launch/tf_pub.launch"/> -->
+    <include file="$(find ndt_localizer)/launch/ndt_localizer.launch"/>
 </launch>
