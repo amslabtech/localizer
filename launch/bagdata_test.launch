@@ -16,5 +16,46 @@
     <!-- <include file="$(find ndt_localizer)/launch/ekf.launch"/> -->
     <!-- <include file="$(find ndt_localizer)/launch/map_match.launch"/> -->
     <!-- <include file="$(find ndt_localizer)/launch/tf_pub.launch"/> -->
-    <include file="$(find ndt_localizer)/launch/ndt_localizer.launch"/>
+
+    <!-- <include file="$(find ndt_localizer)/launch/ndt_localizer.launch"/> -->
+
+    <arg name="init_x" default="0.0"/>
+    <arg name="init_y" default="0.0"/>
+    <arg name="init_yaw" default="0.0"/>
+    <arg name="cloud_map_offset_x" default="0.0"/>
+    <arg name="cloud_map_offset_y" default="0.0"/>
+    <arg name="cloud_map_offset_z" default="0.0"/>
+    <arg name="cloud_map_offset_roll" default="0.0"/>
+    <arg name="cloud_map_offset_pitch" default="0.0"/>
+    <arg name="cloud_map_offset_yaw" default="0.0"/>
+    <arg name="map_file" default="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
+    <arg name="map_frame" default="map"/>
+    <arg name="matching_score_threshold" default="0.5"/>
+
+    <group ns="ndt_localizer">
+        <node pkg="ndt_localizer" type="map_match" name="map_match">
+            <param name="CLOUD_MAP_OFFSET_X" value="$(arg cloud_map_offset_x)" />
+            <param name="CLOUD_MAP_OFFSET_Y" value="$(arg cloud_map_offset_y)" />
+            <param name="CLOUD_MAP_OFFSET_Z" value="$(arg cloud_map_offset_z)" />
+            <param name="CLOUD_MAP_OFFSET_ROLL" value="$(arg cloud_map_offset_roll)" />
+            <param name="CLOUD_MAP_OFFSET_PITCH" value="$(arg cloud_map_offset_pitch)" />
+            <param name="CLOUD_MAP_OFFSET_YAW" value="$(arg cloud_map_offset_yaw)" />
+            <param name="PARENT_FRAME" value="$(arg map_frame)" />
+            <param name="MAP_FILE" type="string" value="$(arg map_file)"/>
+            <param name="VOXEL_SIZE" value="0.3" />
+            <param name="LIMIT_RANGE" value="20.0" />
+            <param name="MATCHING_SCORE_THRESHOLD" value="$(arg matching_score_threshold)"/>
+        </node>
+
+        <node pkg="ndt_localizer" type="ekf" name="ekf">
+            <rosparam file="$(find ndt_localizer)/config/ekf_sigs.yaml" />
+            <param name="INIT_X" value="$(arg init_x)"/>
+            <param name="INIT_Y" value="$(arg init_y)"/>
+            <param name="INIT_YAW" value="$(arg init_yaw)"/>
+            <param name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
+            <param name="parent_frame_name" type="string" value="$(arg map_frame)"/>
+            <remap from="/imu/data" to="/imu/data" />
+            <remap from="/odom" to="/odom" />
+        </node>
+    </group>
 </launch>
