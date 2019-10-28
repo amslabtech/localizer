@@ -24,6 +24,7 @@ int main(int argc, char* argv[])
     priv_nh.param("MAP_FILE", map_file, std::string("$(find localizer)/example_data/d_kan_indoor.pcd"));
     matcher.map_read(map_file);
 
+    std::cout << "waiting for data ..." << std::endl;
     while(ros::ok()){
 
         if(matcher.is_start) matcher.process();
