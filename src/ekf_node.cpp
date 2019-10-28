@@ -222,7 +222,6 @@ void odomCallback(nav_msgs::Odometry msg){
         tf::Quaternion q;
         q.setRPY(0, 0, odom_yaw);
         transform.setRotation(q);
-        std::cout << "odom callback: \n" << msg.header.stamp << std::endl;
         tf::StampedTransform odom_tf(transform, msg.header.stamp, odom_frame_id, msg.child_frame_id);
         if(broadcaster_ptr != NULL){
             broadcaster_ptr->sendTransform(odom_tf);
@@ -455,7 +454,6 @@ int main(int argc, char** argv){
 
             if(ENABLE_TF){
                 try{
-                    std::cout << "ekf_odom time: \n" << ekf_odom.header.stamp << std::endl;
                     tf::Transform map_to_robot;
                     tf::poseMsgToTF(ekf_odom.pose.pose, map_to_robot);
                     tf::Stamped<tf::Pose> robot_to_map(map_to_robot.inverse(), ekf_odom.header.stamp, ekf_odom.child_frame_id);
