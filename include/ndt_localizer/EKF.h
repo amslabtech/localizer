@@ -5,7 +5,7 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <fstream>
-#include <Eigen/Core>
+#include <Eigen/Dense>
 
 using namespace Eigen;
 
