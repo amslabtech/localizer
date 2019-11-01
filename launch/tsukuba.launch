@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="init_x" default="18.0"/>
+    <arg name="init_y" default="-4.0"/>
+    <arg name="init_yaw" default="-0.09"/>
+    <arg name="cloud_map_offset_x" default="0.0"/>
+    <arg name="cloud_map_offset_y" default="0.0"/>
+    <arg name="cloud_map_offset_z" default="0.0"/>
+    <arg name="cloud_map_offset_roll" default="0.0"/>
+    <arg name="cloud_map_offset_pitch" default="0.0"/>
+    <arg name="cloud_map_offset_yaw" default="0.0"/>
+    <arg name="map_file" default="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
+    <arg name="map_frame" default="map"/>
+    <arg name="matching_score_threshold" default="0.5"/>
+    <arg name="enable_tf" default="false"/>
+    <arg name="enable_odom_tf" default="false"/>
+
+    <group ns="ndt_localizer">
+        <node pkg="ndt_localizer" type="map_match" name="map_match">
+			<arg name="map_file" value="$(find ndt_localizer)/example_data/tsukuba_autoware_downsampled.pcd"/>
+            <param name="CLOUD_MAP_OFFSET_X" value="$(arg cloud_map_offset_x)" />
+            <param name="CLOUD_MAP_OFFSET_Y" value="$(arg cloud_map_offset_y)" />
+            <param name="CLOUD_MAP_OFFSET_Z" value="$(arg cloud_map_offset_z)" />
+            <param name="CLOUD_MAP_OFFSET_ROLL" value="$(arg cloud_map_offset_roll)" />
+            <param name="CLOUD_MAP_OFFSET_PITCH" value="$(arg cloud_map_offset_pitch)" />
+            <param name="CLOUD_MAP_OFFSET_YAW" value="$(arg cloud_map_offset_yaw)" />
+            <param name="PARENT_FRAME" value="$(arg map_frame)" />
+            <param name="MAP_FILE" type="string" value="$(arg map_file)"/>
+            <param name="VOXEL_SIZE" value="0.5" />
+            <param name="LIMIT_RANGE" value="30.0" />
+            <param name="MATCHING_SCORE_THRESHOLD" value="$(arg matching_score_threshold)"/>
+            <param name="RESOLUTION" type="double" value="3.0"/>
+        </node>
+
+        <node pkg="ndt_localizer" type="ekf" name="ekf">
+            <!-- <rosparam file="$(find ndt_localizer)/config/ekf_sigs.yaml" /> -->
+            <param name="INIT_X" value="$(arg init_x)"/>
+            <param name="INIT_Y" value="$(arg init_y)"/>
+            <param name="INIT_YAW" value="$(arg init_yaw)"/>
+            <param name="mode_pointing_ini_pose_on_rviz" type="bool" value="false" />
+            <param name="parent_frame_name" type="string" value="$(arg map_frame)"/>
+            <param name="ENABLE_TF" value="$(arg enable_tf)"/>
+            <param name="ENABLE_ODOM_TF" value="$(arg enable_odom_tf)"/>
+            <remap from="/imu/data" to="/imu/data" />
+            <remap from="/odom" to="/odom" />
+            <param name="init_sig_x" type="double" value="1e-1000"/>
+            <param name="init_sig_y" type="double" value="1e-1000"/>
+            <param name="init_sig_yaw" type="double" value="1e-1000"/>
+            <param name="Pred_a1" type="double" value="1e-4"/>
+            <param name="Pred_a2" type="double" value="1e-4"/>
+            <param name="Pred_a3" type="double" value="1e-4"/>
+            <param name="Pred_a4" type="double" value="1e-4"/>
+            <param name="NDT_sig_X" type="double" value="1e-0"/>
+            <param name="NDT_sig_Y" type="double" value="1e-0"/>
+            <param name="NDT_sig_Yaw" type="double" value="1e-0"/>
+        </node>
+    </group>
+
+</launch>
+
+
