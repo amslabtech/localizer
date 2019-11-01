@@ -45,6 +45,7 @@ class Matcher{
         double CLOUD_MAP_OFFSET_ROLL;
         double CLOUD_MAP_OFFSET_PITCH;
         double CLOUD_MAP_OFFSET_YAW;
+        double RESOLUTION;
 
         ros::Time buffer_time;
         sensor_msgs::PointCloud2 buffer_pc;

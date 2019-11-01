@@ -22,11 +22,6 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     pc_sub = n.subscribe("/velodyne_points", 1, &Matcher::lidarcallback, this);
     odom_sub = n.subscribe("/EKF/result", 1, &Matcher::odomcallback, this);
 
-    ndt.setTransformationEpsilon(0.001);
-    ndt.setStepSize(0.1);
-    ndt.setResolution(1.0);//1.0 change 05/09
-    ndt.setMaximumIterations(35);
-
     private_nh_.param("PARENT_FRAME", PARENT_FRAME, {"/map"});
     /* n.param("CHILD_FRAME", CHILD_FRAME, {"/matching_base_link"}); */
     private_nh_.param("VOXEL_SIZE",VOXEL_SIZE ,{0.3});
@@ -38,6 +33,7 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     private_nh_.param("CLOUD_MAP_OFFSET_ROLL", CLOUD_MAP_OFFSET_ROLL, {0.0});
     private_nh_.param("CLOUD_MAP_OFFSET_PITCH", CLOUD_MAP_OFFSET_PITCH, {0.0});
     private_nh_.param("CLOUD_MAP_OFFSET_YAW", CLOUD_MAP_OFFSET_YAW, {0.0});
+    private_nh_.param("RESOLUTION", RESOLUTION, {0.5});
 
     std::cout<<"PARENT_FRAME : "<<PARENT_FRAME<<std::endl;
     /* std::cout<<"CHILD_FRAME : "<<CHILD_FRAME<<std::endl; */
@@ -49,9 +45,15 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     std::cout<<"CLOUD_MAP_OFFSET_ROLL : "<< CLOUD_MAP_OFFSET_ROLL <<std::endl;
     std::cout<<"CLOUD_MAP_OFFSET_PITCH : "<< CLOUD_MAP_OFFSET_PITCH <<std::endl;
     std::cout<<"CLOUD_MAP_OFFSET_YAW : "<< CLOUD_MAP_OFFSET_YAW <<std::endl;
+    std::cout<<"RESOLUTION : "<< RESOLUTION <<std::endl;
 
     // buffer_odom.header.frame_id = PARENT_FRAME;
     // buffer_odom.child_frame_id = CHILD_FRAME;
+
+    ndt.setTransformationEpsilon(0.001);
+    ndt.setStepSize(0.1);
+    ndt.setResolution(RESOLUTION);//1.0 change 05/09
+    ndt.setMaximumIterations(35);
 }
 
 
