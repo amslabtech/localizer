@@ -10,7 +10,7 @@
     <arg name="cloud_map_offset_roll" default="0.0"/>
     <arg name="cloud_map_offset_pitch" default="0.0"/>
     <arg name="cloud_map_offset_yaw" default="0.0"/>
-    <arg name="map_file" default="$(find ndt_localizer)/example_data/d_kan_indoor.pcd"/>
+    <arg name="map_file" default="$(find ndt_localizer)/example_data/tsukuba_autoware_downsampled.pcd"/>
     <arg name="map_frame" default="map"/>
     <arg name="matching_score_threshold" default="0.5"/>
     <arg name="enable_tf" default="false"/>
@@ -18,7 +18,6 @@
 
     <group ns="ndt_localizer">
         <node pkg="ndt_localizer" type="map_match" name="map_match">
-			<arg name="map_file" value="$(find ndt_localizer)/example_data/tsukuba_autoware_downsampled.pcd"/>
             <param name="CLOUD_MAP_OFFSET_X" value="$(arg cloud_map_offset_x)" />
             <param name="CLOUD_MAP_OFFSET_Y" value="$(arg cloud_map_offset_y)" />
             <param name="CLOUD_MAP_OFFSET_Z" value="$(arg cloud_map_offset_z)" />
