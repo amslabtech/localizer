@@ -27,7 +27,7 @@
             <param name="PARENT_FRAME" value="$(arg map_frame)" />
             <param name="MAP_FILE" type="string" value="$(arg map_file)"/>
             <param name="VOXEL_SIZE" value="0.9" />
-            <param name="LIMIT_RANGE" value="50.0" />
+            <param name="LIMIT_RANGE" value="60.0" />
             <param name="MATCHING_SCORE_THRESHOLD" value="$(arg matching_score_threshold)"/>
             <param name="RESOLUTION" type="double" value="5.0"/>
         </node>
