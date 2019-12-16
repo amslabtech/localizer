@@ -51,7 +51,7 @@ Matcher::Matcher(ros::NodeHandle n,ros::NodeHandle private_nh_) :
     // buffer_odom.child_frame_id = CHILD_FRAME;
 
     ndt.setNumThreads(omp_get_max_threads());
-    ndt.setNeighborhoodSearchMethod(pclomp::KDTREE);
+    ndt.setNeighborhoodSearchMethod(pclomp::DIRECT7);
     ndt.setTransformationEpsilon(0.001);
     ndt.setStepSize(0.1);
     ndt.setResolution(RESOLUTION);//1.0 change 05/09
