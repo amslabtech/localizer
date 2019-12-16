@@ -12,12 +12,12 @@
     <arg name="cloud_map_offset_yaw" default="0.0"/>
     <arg name="map_file" default="$(find ndt_localizer)/example_data/tsukuba_autoware_downsampled.pcd"/>
     <arg name="map_frame" default="map"/>
-    <arg name="matching_score_threshold" default="0.5"/>
+    <arg name="matching_score_threshold" default="5.0"/>
     <arg name="enable_tf" default="false"/>
     <arg name="enable_odom_tf" default="false"/>
 
     <group ns="ndt_localizer">
-        <node pkg="ndt_localizer" type="map_match" name="map_match">
+        <node pkg="ndt_localizer" type="map_match" name="map_match" output="screen">
             <param name="CLOUD_MAP_OFFSET_X" value="$(arg cloud_map_offset_x)" />
             <param name="CLOUD_MAP_OFFSET_Y" value="$(arg cloud_map_offset_y)" />
             <param name="CLOUD_MAP_OFFSET_Z" value="$(arg cloud_map_offset_z)" />
@@ -26,10 +26,10 @@
             <param name="CLOUD_MAP_OFFSET_YAW" value="$(arg cloud_map_offset_yaw)" />
             <param name="PARENT_FRAME" value="$(arg map_frame)" />
             <param name="MAP_FILE" type="string" value="$(arg map_file)"/>
-            <param name="VOXEL_SIZE" value="0.5" />
-            <param name="LIMIT_RANGE" value="30.0" />
+            <param name="VOXEL_SIZE" value="0.9" />
+            <param name="LIMIT_RANGE" value="60.0" />
             <param name="MATCHING_SCORE_THRESHOLD" value="$(arg matching_score_threshold)"/>
-            <param name="RESOLUTION" type="double" value="3.0"/>
+            <param name="RESOLUTION" type="double" value="5.0"/>
         </node>
 
         <node pkg="ndt_localizer" type="ekf" name="ekf">
@@ -50,9 +50,9 @@
             <param name="Pred_a2" type="double" value="1e-4"/>
             <param name="Pred_a3" type="double" value="1e-4"/>
             <param name="Pred_a4" type="double" value="1e-4"/>
-            <param name="NDT_sig_X" type="double" value="1e-0"/>
-            <param name="NDT_sig_Y" type="double" value="1e-0"/>
-            <param name="NDT_sig_Yaw" type="double" value="1e-0"/>
+            <param name="NDT_sig_X" type="double" value="5e-1"/>
+            <param name="NDT_sig_Y" type="double" value="5e-1"/>
+            <param name="NDT_sig_Yaw" type="double" value="5e-1"/>
         </node>
     </group>
 
