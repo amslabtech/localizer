@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ndt_localizer)
 
+string(ASCII 27 ESC)
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -16,6 +18,14 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
 )
+
+find_package(ndt_omp QUIET)
+if(ndt_omp_FOUND)
+    message("-- ${ESC}[32mndt_omp is found!!!${ESC}[0m")
+else()
+    message("-- ${ESC}[31mndt_omp is not found!!!${ESC}[0m")
+endif()
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -183,6 +193,15 @@ target_link_libraries(map_match
     ${PCL_LIBRARIES}
 )
 
+if(ndt_omp_FOUND)
+    include_directories(${ndt_omp_INCLUDE_DIRS})
+    add_executable(map_match_omp src/map_match_omp_node.cpp src/map_match_omp.cpp)
+    target_link_libraries(map_match_omp
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${ndt_omp_LIBRARIES}
+    )
+endif()
 
 
 ## Rename C++ executable without prefix
