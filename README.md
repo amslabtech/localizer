@@ -3,6 +3,7 @@
 ## Requirement
 - ros (kinetic)
 - PCL 1.8
+- [ndt_omp](https://github.com/koide3/ndt_omp)(optional)
 
 ## Runtime requirements
 - tf from /base_link to /velodyne
