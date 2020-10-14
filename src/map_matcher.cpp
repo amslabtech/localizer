@@ -7,6 +7,7 @@ MapMatcher::MapMatcher(void)
 {
     pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("ndt_pose", 1);
     cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud/aligned", 1);
+    downsampled_map_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("map_cloud/downsampled", 1, true);
     pose_sub_ = nh_.subscribe("estimated_pose", 1, &MapMatcher::pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
     map_sub_ = nh_.subscribe("map_cloud", 1, &MapMatcher::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
     cloud_sub_ = nh_.subscribe("scan_cloud", 1, &MapMatcher::cloud_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
@@ -44,6 +45,9 @@ void MapMatcher::map_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     ROS_INFO_STREAM("size: " << map_cloud_ptr_->points.size());
     apply_voxel_grid_filter(leaf_size_, map_cloud_ptr_);
     ROS_INFO_STREAM("downsampled size: " << map_cloud_ptr_->points.size());
+    sensor_msgs::PointCloud2 output;
+    pcl::toROSMsg(*map_cloud_ptr_, output);
+    downsampled_map_pub_.publish(output);
     is_map_received_ = true;
 }
 
