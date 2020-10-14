@@ -280,7 +280,9 @@ void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
 {
     const Eigen::VectorXd z = pose;
     const Eigen::MatrixXd jh = Eigen::MatrixXd::Identity(state_dim_, state_dim_);
-    const Eigen::VectorXd y = z - x_;
+    for(unsigned int i=position_dim_;i<state_dim_;++i){
+        y(i) = atan2(sin(y(i)), cos(y(i)));
+    }
     const Eigen::MatrixXd s = jh * p_ * jh.transpose() + r_;
     const Eigen::MatrixXd k = p_ * jh.transpose() * s.inverse();
     x_ = x_ + k * y;
