@@ -48,10 +48,16 @@ add_definitions(
 )
 
 add_executable(map_matcher src/map_matcher_node.cpp src/map_matcher.cpp)
+add_executable(ndt_odom_integrator src/ndt_odom_integrator_node.cpp src/ndt_odom_integrator.cpp)
 
 add_dependencies(map_matcher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(ndt_odom_integrator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(map_matcher
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
+)
+
+target_link_libraries(ndt_odom_integrator
+    ${catkin_LIBRARIES}
 )
