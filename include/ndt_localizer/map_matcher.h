@@ -8,6 +8,7 @@
 
 #include <pcl/point_types.h>
 #include <pcl/registration/ndt.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <Eigen/Dense>
@@ -25,6 +26,7 @@ public:
     void map_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
     void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
     Eigen::Matrix4f get_ndt_transform(const CloudTypePtr& cloud_ptr);
+    void apply_voxel_grid_filter(double leaf_size, CloudTypePtr& cloud_ptr);
     void process(void);
 
 private:

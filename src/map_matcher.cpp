@@ -39,6 +39,9 @@ void MapMatcher::map_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
     ROS_INFO("received map");
     pcl::fromROSMsg(*msg, *map_cloud_ptr_);
+    ROS_INFO_STREAM("size: " << map_cloud_ptr_->points.size());
+    apply_voxel_grid_filter(leaf_size_, map_cloud_ptr_);
+    ROS_INFO_STREAM("downsampled size: " << map_cloud_ptr_->points.size());
     is_map_received_ = true;
 }
 
@@ -47,6 +50,7 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     if(is_map_received_ && is_pose_updated_){
         CloudTypePtr cloud_ptr(new CloudType);
         pcl::fromROSMsg(*msg, *cloud_ptr);
+        apply_voxel_grid_filter(leaf_size_, cloud_ptr);
         const Eigen::Matrix4f transform = get_ndt_transform(cloud_ptr);
         if(transform.isZero(1e-6)){
             return;
@@ -104,6 +108,16 @@ Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
         cloud_pub_.publish(aligned_cloud_msg);
     }
     return ndt.getFinalTransformation();
+}
+
+void MapMatcher::apply_voxel_grid_filter(double leaf_size, CloudTypePtr& cloud_ptr)
+{
+    pcl::VoxelGrid<PointType> vg;
+    vg.setInputCloud(cloud_ptr);
+    vg.setLeafSize(leaf_size, leaf_size, leaf_size);
+    CloudTypePtr output_cloud_ptr(new CloudType);
+    vg.filter(*output_cloud_ptr);
+    pcl::copyPointCloud(*output_cloud_ptr, *cloud_ptr);
 }
 
 void MapMatcher::process(void)
