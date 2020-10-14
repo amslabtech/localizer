@@ -23,7 +23,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
     local_nh_.param<double>("init_yaw", init_yaw, 0);
     local_nh_.param<double>("sigma_odom", sigma_odom_, 1e-4);
     local_nh_.param<double>("sigma_imu", sigma_imu_, 1e-4);
-    local_nh_.param<double>("sigma_ndt", sigma_imu_, 1e-2);
+    local_nh_.param<double>("sigma_ndt", sigma_ndt_, 1e-2);
 
     ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
     ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
