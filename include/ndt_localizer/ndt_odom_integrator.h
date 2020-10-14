@@ -22,6 +22,7 @@ public:
     void ndt_pose_callback(const geometry_msgs::PoseStampedConstPtr& msg);
     void odom_callback(const nav_msgs::OdometryConstPtr& msg);
     void imu_callback(const sensor_msgs::ImuConstPtr& msg);
+    void map_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
     void initialize_state(double x, double y, double z, double roll, double pitch, double yaw);
     geometry_msgs::PoseWithCovariance get_pose_msg_from_state(void);
     void predict_by_odom(const Eigen::Vector3d& dp);
@@ -37,10 +38,11 @@ private:
     ros::Subscriber ndt_pose_sub_;
     ros::Subscriber odom_sub_;
     ros::Subscriber imu_sub_;
+    ros::Subscriber map_sub_;
 
     double init_sigma_position_;
     double init_sigma_orientation_;
-    std::string frame_id_;// will be overwrited by frame_id of the ndt pose
+    std::string frame_id_;// will be overwrited by frame_id of the map 
     double sigma_odom_;
     double sigma_imu_;
     double sigma_ndt_;
