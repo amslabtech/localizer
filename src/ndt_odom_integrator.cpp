@@ -125,7 +125,9 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
         p_stamped.header.stamp = msg->header.stamp;
         p_stamped.pose = p;
         estimated_pose_pub_.publish(p_stamped);
-        publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
+        if(enable_tf_){
+            publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
+        }
     }else{
         // first callback
     }
@@ -149,7 +151,6 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
         p_stamped.header.stamp = msg->header.stamp;
         p_stamped.pose = p;
         estimated_pose_pub_.publish(p_stamped);
-        publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
     }else{
         // first callback
     }
@@ -310,7 +311,7 @@ void NDTOdomIntegrator::publish_map_to_odom_tf(const ros::Time& stamp, const geo
     tf2::toMsg(map_to_robot_tf.inverse(), robot_to_map_pose.pose);
     geometry_msgs::PoseStamped odom_to_map_pose;
     try{
-        tf_->transform(robot_to_map_pose, odom_to_map_pose, odom_frame_id_);
+        tf_->transform(robot_to_map_pose, odom_to_map_pose, odom_frame_id_, ros::Duration(0.1));
     }catch(tf2::TransformException& ex){
         ROS_WARN_STREAM_THROTTLE(3.0, ex.what());
         return;
