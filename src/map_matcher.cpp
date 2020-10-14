@@ -60,9 +60,9 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
         geometry_msgs::PoseStamped aligned_pose;
         aligned_pose.header.stamp = msg->header.stamp;
         aligned_pose.header.frame_id = map_cloud_ptr_->header.frame_id;
-        aligned_pose.pose.position.x = transform(3, 0);
-        aligned_pose.pose.position.y = transform(3, 1);
-        aligned_pose.pose.position.z = transform(3, 2);
+        aligned_pose.pose.position.x = transform(0, 3);
+        aligned_pose.pose.position.y = transform(1, 3);
+        aligned_pose.pose.position.z = transform(2, 3);
         Eigen::Quaternionf q(Eigen::Matrix3f(transform.block(0, 0, 3, 3)));
         q.normalize();
         aligned_pose.pose.orientation.w = q.w();
