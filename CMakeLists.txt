@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   pcl_conversions
+  ndt_omp
 )
 
 find_package(PCL 1.8.0 REQUIRED)

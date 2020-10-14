@@ -98,13 +98,14 @@ Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
     CloudTypePtr filtered_scan_cloud_ptr(new CloudType);
     apply_passthrough_filter(range_, cloud_ptr, filtered_scan_cloud_ptr);
 
-    pcl::NormalDistributionsTransform<PointType, PointType> ndt;
+    pclomp::NormalDistributionsTransform<PointType, PointType> ndt;
     ndt.setTransformationEpsilon(epsilon_);
     ndt.setStepSize(step_size_);
     ndt.setResolution(resolution_);
     ndt.setMaximumIterations(max_iterations_);
     ndt.setInputSource(filtered_scan_cloud_ptr);
     ndt.setInputTarget(filtered_map_cloud_ptr);
+    ndt.setNumThreads(std::thread::hardware_concurrency());
     CloudTypePtr aligned_cloud_ptr(new CloudType);
     ndt.align(*aligned_cloud_ptr, init_guess);
     if(!ndt.hasConverged()){

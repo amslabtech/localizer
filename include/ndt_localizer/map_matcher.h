@@ -1,6 +1,8 @@
 #ifndef __MAP_MATCHER_H
 #define __MAP_MATCHER_H
 
+#include <thread>
+
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -11,6 +13,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
+
+#include "pclomp/ndt_omp.h"
 
 #include <Eigen/Dense>
 
