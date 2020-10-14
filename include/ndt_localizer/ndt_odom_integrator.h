@@ -10,6 +10,9 @@
 #include <sensor_msgs/Imu.h>
 
 #include <tf2/utils.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 
 #include <Eigen/Dense>
 
@@ -29,6 +32,7 @@ public:
     void predict_by_imu(const Eigen::Vector3d& dr);
     void update_by_ndt_pose(const Eigen::VectorXd& pose);
     Eigen::Matrix3d get_rotation_matrix(double roll, double pitch, double yaw);
+    void publish_map_to_odom_tf(const ros::Time& stamp, const geometry_msgs::Pose& pose);
     void process(void);
 
 private:
@@ -42,10 +46,14 @@ private:
 
     double init_sigma_position_;
     double init_sigma_orientation_;
-    std::string frame_id_;// will be overwrited by frame_id of the map 
+    std::string map_frame_id_; 
+    std::string odom_frame_id_;
+    std::string robot_frame_id_;
     double sigma_odom_;
     double sigma_imu_;
     double sigma_ndt_;
+    bool enable_odom_tf_;
+    bool enable_tf_;
 
     unsigned int state_dim_;
     unsigned int position_dim_;
@@ -57,6 +65,9 @@ private:
     Eigen::MatrixXd r_;
     ros::Time last_odom_stamp_;
     ros::Time last_imu_stamp_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;
+    std::shared_ptr<tf2_ros::TransformListener> tfl_;
+    std::shared_ptr<tf2_ros::Buffer> tf_;
 };
 
 }

@@ -24,6 +24,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
     local_nh_.param<double>("sigma_odom", sigma_odom_, 1e-4);
     local_nh_.param<double>("sigma_imu", sigma_imu_, 1e-4);
     local_nh_.param<double>("sigma_ndt", sigma_ndt_, 1e-2);
+    local_nh_.param<bool>("enable_odom_tf", enable_odom_tf_, true);
+    local_nh_.param<bool>("enable_tf", enable_tf_, true);
 
     ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
     ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -36,6 +38,13 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
     ROS_INFO_STREAM("sigma_odom: " << sigma_odom_);
     ROS_INFO_STREAM("sigma_imu: " << sigma_imu_);
     ROS_INFO_STREAM("sigma_ndt: " << sigma_ndt_);
+    ROS_INFO_STREAM("enable_odom_tf: " << enable_odom_tf_);
+    ROS_INFO_STREAM("enable_tf: " << enable_tf_);
+
+    tf_ = std::make_shared<tf2_ros::Buffer>();
+    tf_->setUsingDedicatedThread(true);
+    tfb_ = std::make_shared<tf2_ros::TransformBroadcaster>();
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_);
 
     state_dim_ = 6;
     position_dim_ = 3;
@@ -51,12 +60,14 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
 
     last_odom_stamp_ = ros::Time(0);
     last_imu_stamp_ = ros::Time(0);
-    frame_id_ = "";
+    map_frame_id_ = "";
+    odom_frame_id_ = "";
+    robot_frame_id_ = "";
 }
 
 void NDTOdomIntegrator::ndt_pose_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 {
-    if(frame_id_.empty()){
+    if(map_frame_id_.empty()){
         ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
         return;
     }
@@ -75,29 +86,46 @@ void NDTOdomIntegrator::ndt_pose_callback(const geometry_msgs::PoseStampedConstP
     update_by_ndt_pose(pose);
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
     geometry_msgs::PoseWithCovarianceStamped p_stamped;
-    p_stamped.header.frame_id = frame_id_;
+    p_stamped.header.frame_id = map_frame_id_;
     p_stamped.header.stamp = msg->header.stamp;
     p_stamped.pose = p;
     estimated_pose_pub_.publish(p_stamped);
+    if(enable_tf_){
+        publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
+    }
 }
 
 void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
-    if(frame_id_.empty()){
+    if(enable_odom_tf_){
+        geometry_msgs::TransformStamped odom_to_robot_tf;
+        odom_to_robot_tf.header = msg->header;
+        odom_to_robot_tf.child_frame_id = msg->child_frame_id;
+        odom_to_robot_tf.transform.translation.x = msg->pose.pose.position.x;
+        odom_to_robot_tf.transform.translation.y = msg->pose.pose.position.y;
+        odom_to_robot_tf.transform.translation.z = msg->pose.pose.position.z;
+        odom_to_robot_tf.transform.rotation = msg->pose.pose.orientation;
+        tfb_->sendTransform(odom_to_robot_tf);
+    }
+
+    if(map_frame_id_.empty()){
         ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
         return;
     }
     const ros::Time stamp = msg->header.stamp;
+    odom_frame_id_ = msg->header.frame_id;
+    robot_frame_id_ = msg->child_frame_id;
     if(last_odom_stamp_ != ros::Time(0)){
         const double dt = (stamp - last_odom_stamp_).toSec();
         const Eigen::Vector3d dp = {dt * msg->twist.twist.linear.x, dt * msg->twist.twist.linear.y, dt * msg->twist.twist.linear.z};
         predict_by_odom(dp);
         const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
         geometry_msgs::PoseWithCovarianceStamped p_stamped;
-        p_stamped.header.frame_id = frame_id_;
+        p_stamped.header.frame_id = map_frame_id_;
         p_stamped.header.stamp = msg->header.stamp;
         p_stamped.pose = p;
         estimated_pose_pub_.publish(p_stamped);
+        publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
     }else{
         // first callback
     }
@@ -106,7 +134,7 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 
 void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
 {
-    if(frame_id_.empty()){
+    if(map_frame_id_.empty()){
         ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
         return;
     }
@@ -117,10 +145,11 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
         predict_by_imu(dr);
         const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
         geometry_msgs::PoseWithCovarianceStamped p_stamped;
-        p_stamped.header.frame_id = frame_id_;
+        p_stamped.header.frame_id = map_frame_id_;
         p_stamped.header.stamp = msg->header.stamp;
         p_stamped.pose = p;
         estimated_pose_pub_.publish(p_stamped);
+        publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
     }else{
         // first callback
     }
@@ -129,8 +158,8 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
 
 void NDTOdomIntegrator::map_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-    frame_id_ = msg->header.frame_id;
-    ROS_INFO_STREAM("frame_id is set as " << frame_id_);
+    map_frame_id_ = msg->header.frame_id;
+    ROS_INFO_STREAM("frame_id is set as " << map_frame_id_);
 }
 
 void NDTOdomIntegrator::initialize_state(double x, double y, double z, double roll, double pitch, double yaw)
@@ -144,7 +173,7 @@ void NDTOdomIntegrator::initialize_state(double x, double y, double z, double ro
 
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
     geometry_msgs::PoseWithCovarianceStamped p_stamped;
-    p_stamped.header.frame_id = frame_id_;
+    p_stamped.header.frame_id = map_frame_id_;
     p_stamped.header.stamp = ros::Time::now();
     p_stamped.pose = p;
     estimated_pose_pub_.publish(p);
@@ -267,6 +296,31 @@ Eigen::Matrix3d NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch
                                                    Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) * 
                                                    Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ())).matrix();
     return rot;
+}
+
+void NDTOdomIntegrator::publish_map_to_odom_tf(const ros::Time& stamp, const geometry_msgs::Pose& pose)
+{
+    tf2::Transform map_to_robot_tf;
+    tf2::convert(pose, map_to_robot_tf);
+    geometry_msgs::PoseStamped robot_to_map_pose;
+    robot_to_map_pose.header.frame_id = robot_frame_id_;
+    robot_to_map_pose.header.stamp = stamp;
+    tf2::toMsg(map_to_robot_tf.inverse(), robot_to_map_pose.pose);
+    geometry_msgs::PoseStamped odom_to_map_pose;
+    try{
+        tf_->transform(robot_to_map_pose, odom_to_map_pose, odom_frame_id_);
+    }catch(tf2::TransformException& ex){
+        ROS_WARN_STREAM_THROTTLE(3.0, ex.what());
+        return;
+    }
+    tf2::Transform odom_to_map_tf;
+    tf2::convert(odom_to_map_pose.pose, odom_to_map_tf);
+    geometry_msgs::TransformStamped map_to_odom_tf;
+    map_to_odom_tf.header.stamp = stamp;
+    map_to_odom_tf.header.frame_id = map_frame_id_;
+    map_to_odom_tf.child_frame_id = odom_frame_id_;
+    tf2::convert(odom_to_map_tf.inverse(), map_to_odom_tf.transform);
+    tfb_->sendTransform(map_to_odom_tf);
 }
 
 void NDTOdomIntegrator::process(void)
