@@ -58,7 +58,7 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
             return;
         }
         geometry_msgs::PoseStamped aligned_pose;
-        aligned_pose.header = msg->header;
+        aligned_pose.header.frame_id = map_cloud_ptr_->header.frame_id;
         aligned_pose.pose.position.x = transform(3, 0);
         aligned_pose.pose.position.y = transform(3, 1);
         aligned_pose.pose.position.z = transform(3, 2);
