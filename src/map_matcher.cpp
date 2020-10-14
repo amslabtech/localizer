@@ -24,6 +24,7 @@ MapMatcher::MapMatcher(void)
     ROS_INFO_STREAM("resolution: " << resolution_);
     ROS_INFO_STREAM("max_iterations: " << max_iterations_);
 
+    map_cloud_ptr_ = CloudTypePtr(new CloudType);
     is_map_received_ = false;
     is_pose_updated_ = false;
 }
