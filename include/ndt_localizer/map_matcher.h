@@ -8,6 +8,7 @@
 
 #include <pcl/point_types.h>
 #include <pcl/registration/ndt.h>
+#include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -27,6 +28,7 @@ public:
     void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
     Eigen::Matrix4f get_ndt_transform(const CloudTypePtr& cloud_ptr);
     void apply_voxel_grid_filter(double leaf_size, CloudTypePtr& cloud_ptr);
+    void apply_passthrough_filter(double range, const CloudTypePtr& cloud_ptr, CloudTypePtr& output_cloud_ptr, const Eigen::Vector3f& center = Eigen::Vector3f::Zero());
     void process(void);
 
 private:
@@ -49,6 +51,8 @@ private:
     double step_size_;
     double resolution_;
     int max_iterations_;
+
+    double range_;
 };
 
 }

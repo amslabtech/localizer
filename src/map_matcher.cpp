@@ -16,6 +16,7 @@ MapMatcher::MapMatcher(void)
     local_nh_.param<double>("step_size", step_size_, 0.1);
     local_nh_.param<double>("resolution", resolution_, 0.1);
     local_nh_.param<int>("max_iterations", max_iterations_, 100);
+    local_nh_.param<double>("range", range_, 100);
 
     ROS_INFO("=== map_matcher ===");
     ROS_INFO_STREAM("epsilon: " << epsilon_);
@@ -23,6 +24,7 @@ MapMatcher::MapMatcher(void)
     ROS_INFO_STREAM("step_size: " << step_size_);
     ROS_INFO_STREAM("resolution: " << resolution_);
     ROS_INFO_STREAM("max_iterations: " << max_iterations_);
+    ROS_INFO_STREAM("range: " << range_);
 
     map_cloud_ptr_ = CloudTypePtr(new CloudType);
     is_map_received_ = false;
@@ -80,22 +82,28 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 
 Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
 {
-    const Eigen::Translation3f init_translation(received_pose_.pose.pose.position.x,
-                                                received_pose_.pose.pose.position.y,
-                                                received_pose_.pose.pose.position.z);
+    const Eigen::Vector3f translation_vector = {static_cast<float>(received_pose_.pose.pose.position.x),
+                                                static_cast<float>(received_pose_.pose.pose.position.y),
+                                                static_cast<float>(received_pose_.pose.pose.position.z)};
+    const Eigen::Translation3f init_translation(translation_vector);
     const Eigen::AngleAxisf init_rotation(Eigen::Quaternionf(received_pose_.pose.pose.orientation.w,
                                                              received_pose_.pose.pose.orientation.x,
                                                              received_pose_.pose.pose.orientation.y,
                                                              received_pose_.pose.pose.orientation.z
                                                              ).normalized());
     const Eigen::Matrix4f init_guess = (init_translation * init_rotation).matrix();
+    CloudTypePtr filtered_map_cloud_ptr(new CloudType);
+    apply_passthrough_filter(range_, map_cloud_ptr_, filtered_map_cloud_ptr, translation_vector);
+    CloudTypePtr filtered_scan_cloud_ptr(new CloudType);
+    apply_passthrough_filter(range_, cloud_ptr, filtered_scan_cloud_ptr);
+
     pcl::NormalDistributionsTransform<PointType, PointType> ndt;
     ndt.setTransformationEpsilon(epsilon_);
     ndt.setStepSize(step_size_);
     ndt.setResolution(resolution_);
     ndt.setMaximumIterations(max_iterations_);
-    ndt.setInputSource(cloud_ptr);
-    ndt.setInputTarget(map_cloud_ptr_);
+    ndt.setInputSource(filtered_scan_cloud_ptr);
+    ndt.setInputTarget(filtered_map_cloud_ptr);
     CloudTypePtr aligned_cloud_ptr(new CloudType);
     ndt.align(*aligned_cloud_ptr, init_guess);
     if(!ndt.hasConverged()){
@@ -118,6 +126,23 @@ void MapMatcher::apply_voxel_grid_filter(double leaf_size, CloudTypePtr& cloud_p
     CloudTypePtr output_cloud_ptr(new CloudType);
     vg.filter(*output_cloud_ptr);
     pcl::copyPointCloud(*output_cloud_ptr, *cloud_ptr);
+}
+
+void MapMatcher::apply_passthrough_filter(double range, const CloudTypePtr& cloud_ptr, CloudTypePtr& output_cloud_ptr, const Eigen::Vector3f& center)
+{
+    pcl::PassThrough<PointType> pass;
+    pass.setInputCloud(cloud_ptr);
+    pass.setFilterFieldName("x");
+    pass.setFilterLimits(center(0) - range, center(0) + range);
+    pass.filter(*output_cloud_ptr);
+    pass.setInputCloud(output_cloud_ptr);
+    pass.setFilterFieldName("y");
+    pass.setFilterLimits(center(1) - range, center(1) + range);
+    pass.filter(*output_cloud_ptr);
+    pass.setInputCloud(output_cloud_ptr);
+    pass.setFilterFieldName("z");
+    pass.setFilterLimits(center(2) - range, center(2) + range);
+    pass.filter(*output_cloud_ptr);
 }
 
 void MapMatcher::process(void)
