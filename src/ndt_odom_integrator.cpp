@@ -177,7 +177,7 @@ void NDTOdomIntegrator::initialize_state(double x, double y, double z, double ro
     p_stamped.header.frame_id = map_frame_id_;
     p_stamped.header.stamp = ros::Time::now();
     p_stamped.pose = p;
-    estimated_pose_pub_.publish(p);
+    estimated_pose_pub_.publish(p_stamped);
 }
 
 geometry_msgs::PoseWithCovariance NDTOdomIntegrator::get_pose_msg_from_state(void)
