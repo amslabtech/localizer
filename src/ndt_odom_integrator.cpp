@@ -11,6 +11,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
     odom_sub_ = nh_.subscribe("odom", 1, &NDTOdomIntegrator::odom_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     imu_sub_ = nh_.subscribe("imu/data", 1, &NDTOdomIntegrator::imu_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     map_sub_ = nh_.subscribe("map_cloud", 1, &NDTOdomIntegrator::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
+    init_pose_sub_ = nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
 
     local_nh_.param<double>("init_sigma_position", init_sigma_position_, 10);
     local_nh_.param<double>("init_sigma_orientation", init_sigma_orientation_, M_PI);
@@ -161,6 +162,34 @@ void NDTOdomIntegrator::map_callback(const sensor_msgs::PointCloud2ConstPtr& msg
 {
     map_frame_id_ = msg->header.frame_id;
     ROS_INFO_STREAM("frame_id is set as " << map_frame_id_);
+}
+
+void NDTOdomIntegrator::init_pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
+{
+    ROS_INFO("received init pose");
+    if(map_frame_id_.empty()){
+        ROS_ERROR_THROTTLE(3.0, "map has not been received");
+        return;
+    }
+    geometry_msgs::PoseWithCovarianceStamped pose_in_map;
+    try{
+        tf_->transform(*msg, pose_in_map, map_frame_id_, ros::Duration(0.1));
+    }catch(tf2::TransformException& ex){
+        ROS_WARN_STREAM_THROTTLE(3.0, ex.what());
+        return;
+    }
+    double roll, pitch, yaw;
+    tf2::Quaternion q;
+    tf2::fromMsg(pose_in_map.pose.pose.orientation, q);
+    tf2::Matrix3x3 rot(q);
+    rot.getRPY(roll, pitch, yaw);
+    initialize_state(pose_in_map.pose.pose.position.x,
+                     pose_in_map.pose.pose.position.y,
+                     pose_in_map.pose.pose.position.z,
+                     roll,
+                     pitch,
+                     yaw);
+    ROS_INFO_STREAM("pose: " << x_.transpose());
 }
 
 void NDTOdomIntegrator::initialize_state(double x, double y, double z, double roll, double pitch, double yaw)

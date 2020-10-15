@@ -26,6 +26,7 @@ public:
     void odom_callback(const nav_msgs::OdometryConstPtr& msg);
     void imu_callback(const sensor_msgs::ImuConstPtr& msg);
     void map_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
+    void init_pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
     void initialize_state(double x, double y, double z, double roll, double pitch, double yaw);
     geometry_msgs::PoseWithCovariance get_pose_msg_from_state(void);
     void predict_by_odom(const Eigen::Vector3d& dp);
@@ -43,6 +44,7 @@ private:
     ros::Subscriber odom_sub_;
     ros::Subscriber imu_sub_;
     ros::Subscriber map_sub_;
+    ros::Subscriber init_pose_sub_;
 
     double init_sigma_position_;
     double init_sigma_orientation_;
