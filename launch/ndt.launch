@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node pkg="ndt_localizer" type="map_matcher" name="map_matcher">
+        <remap from="scan_cloud" to="velodyne_points"/>
+        <remap from="map_cloud" to="map_cloud"/>
+    </node>
+    <node pkg="ndt_localizer" type="ndt_odom_integrator" name="ndt_odom_integrator">
+        <remap from="odom" to="odom"/>
+        <remap from="imu/data" to="imu/data"/>
+    </node>
+</launch>
