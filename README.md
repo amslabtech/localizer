@@ -1,26 +1,40 @@
 # localizer
 
 ## Requirement
-- ros (kinetic)
+- ros (melodic or noetic)
 - PCL 1.8
-- [ndt_omp](https://github.com/koide3/ndt_omp)(optional)
+- [ndt_omp](https://github.com/koide3/ndt_omp)
 
 ## Runtime requirements
-- tf from /base_link to /velodyne
+- tf from robot base frame (e.g. base_link) to sensor frame (e.g. velodyne)
 
-### Subscrived topics
-- /odom (nav_msgs/Odometry)
+## Nodes
+### map_matcher
+#### Published topics
+- /ndt_pose (geometry_msgs/PoseStamped)
+  - aligned pose
+- /cloud/aligned (sensor_msgs/PointCloud2)
+  - scan_cloud aligned by NDT (for debug)
+- /map_cloud/downsampled (sensor_msgs/PointCloud2)
+  - map_cloud downsamped by VoxelGridFilter (for debug)
+#### Subscribed topics
+- /scan_cloud (sensor_msgs/PointCloud2)
+  - sensor data
+- /map_cloud (sensor_msgs/PointCloud2)
+  - map data
+- /estimated_pose (geometry_msgs/PoseWithCovarianceStamped)
+  - used to set `init_guess` for NDT 
+
+### ndt_odom_integrator
+#### Published topics
+- /estimated_pose (geometry_msgs/PoseWithCovarianceStamped)
+  - the output of this localizer
+#### Subscribed topics
 - /imu/data (sensor_msgs/Imu)
-- /velodyne_points(sensor_msgs/PointCloud2)
-- /move_base_simple/goal( geometry_msgs/PoseStamped)
-  - deprecated
-
-## How to use
-- [download](https://drive.google.com/file/d/1BaPeG6ogi5xXnTieIbWilvUuJZT4bIzt/view?usp=sharing)
-- give initial robot's position as below:
-<p align="center"><img src="example_data/init_pose.gif" width=600></p>
-
-- run
-```
-~$  ./run.sh
-```
+- /odom (nav_msgs/Odometry)
+- /ndt_pose (geometry_msgs/PoseStamped)
+  - from `map_matcher` node
+- /map_cloud (sensor_msgs/PointCloud2)
+  - used to get `frame_id`
+- /initialpose (geometry_msgs/PoseWithCovarianceStamped)
+  - used to set initial pose from `rviz`
