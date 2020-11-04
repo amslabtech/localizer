@@ -6,7 +6,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
 : local_nh_("~")
 {
     ROS_INFO("=== ndt_odom_integrator ===");
-    estimated_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("estimated_pose", 1);
+    estimated_pose_pub_ = nh_.advertise<nav_msgs::Odometry>("estimated_pose", 1);
     ndt_pose_sub_ = nh_.subscribe("ndt_pose", 1, &NDTOdomIntegrator::ndt_pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     odom_sub_ = nh_.subscribe("odom", 1, &NDTOdomIntegrator::odom_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     imu_sub_ = nh_.subscribe("imu/data", 1, &NDTOdomIntegrator::imu_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
@@ -86,13 +86,14 @@ void NDTOdomIntegrator::ndt_pose_callback(const geometry_msgs::PoseStampedConstP
             yaw;
     update_by_ndt_pose(pose);
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    geometry_msgs::PoseWithCovarianceStamped p_stamped;
-    p_stamped.header.frame_id = map_frame_id_;
-    p_stamped.header.stamp = msg->header.stamp;
-    p_stamped.pose = p;
-    estimated_pose_pub_.publish(p_stamped);
+    nav_msgs::Odometry estimated_pose;
+    estimated_pose.header.frame_id = map_frame_id_;
+    estimated_pose.header.stamp = msg->header.stamp;
+    estimated_pose.child_frame_id = robot_frame_id_;
+    estimated_pose.pose = p;
+    estimated_pose_pub_.publish(estimated_pose);
     if(enable_tf_){
-        publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
+        publish_map_to_odom_tf(estimated_pose.header.stamp, estimated_pose.pose.pose);
     }
 }
 
@@ -121,13 +122,14 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
         const Eigen::Vector3d dp = {dt * msg->twist.twist.linear.x, dt * msg->twist.twist.linear.y, dt * msg->twist.twist.linear.z};
         predict_by_odom(dp);
         const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-        geometry_msgs::PoseWithCovarianceStamped p_stamped;
-        p_stamped.header.frame_id = map_frame_id_;
-        p_stamped.header.stamp = msg->header.stamp;
-        p_stamped.pose = p;
-        estimated_pose_pub_.publish(p_stamped);
+        nav_msgs::Odometry estimated_pose;
+        estimated_pose.header.frame_id = map_frame_id_;
+        estimated_pose.header.stamp = msg->header.stamp;
+        estimated_pose.child_frame_id = robot_frame_id_;
+        estimated_pose.pose = p;
+        estimated_pose_pub_.publish(estimated_pose);
         if(enable_tf_){
-            publish_map_to_odom_tf(p_stamped.header.stamp, p_stamped.pose.pose);
+            publish_map_to_odom_tf(estimated_pose.header.stamp, estimated_pose.pose.pose);
         }
     }else{
         // first callback
@@ -147,11 +149,12 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
         const Eigen::Vector3d dr = {dt * msg->angular_velocity.x, dt * msg->angular_velocity.y, dt * msg->angular_velocity.z};
         predict_by_imu(dr);
         const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-        geometry_msgs::PoseWithCovarianceStamped p_stamped;
-        p_stamped.header.frame_id = map_frame_id_;
-        p_stamped.header.stamp = msg->header.stamp;
-        p_stamped.pose = p;
-        estimated_pose_pub_.publish(p_stamped);
+        nav_msgs::Odometry estimated_pose;
+        estimated_pose.header.frame_id = map_frame_id_;
+        estimated_pose.header.stamp = msg->header.stamp;
+        estimated_pose.child_frame_id = robot_frame_id_;
+        estimated_pose.pose = p;
+        estimated_pose_pub_.publish(estimated_pose);
     }else{
         // first callback
     }
@@ -202,11 +205,12 @@ void NDTOdomIntegrator::initialize_state(double x, double y, double z, double ro
         init_sigma_orientation_ * p_.block(position_dim_, position_dim_, orientation_dim_, orientation_dim_);
 
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    geometry_msgs::PoseWithCovarianceStamped p_stamped;
-    p_stamped.header.frame_id = map_frame_id_;
-    p_stamped.header.stamp = ros::Time::now();
-    p_stamped.pose = p;
-    estimated_pose_pub_.publish(p_stamped);
+    nav_msgs::Odometry estimated_pose;
+    estimated_pose.header.frame_id = map_frame_id_;
+    estimated_pose.header.stamp = ros::Time::now();
+    estimated_pose.child_frame_id = robot_frame_id_;
+    estimated_pose.pose = p;
+    estimated_pose_pub_.publish(estimated_pose);
 }
 
 geometry_msgs::PoseWithCovariance NDTOdomIntegrator::get_pose_msg_from_state(void)

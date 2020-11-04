@@ -7,6 +7,11 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Odometry.h>
+
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include <pcl/point_types.h>
 #include <pcl/registration/ndt.h>
@@ -27,7 +32,7 @@ public:
     typedef pcl::PointCloud<PointType> CloudType;
     typedef pcl::PointCloud<PointType>::Ptr CloudTypePtr;
     MapMatcher(void);
-    void pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void pose_callback(const nav_msgs::OdometryConstPtr& msg);
     void map_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
     void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
     Eigen::Matrix4f get_ndt_transform(const CloudTypePtr& cloud_ptr);
@@ -44,10 +49,12 @@ private:
     ros::Subscriber pose_sub_;
     ros::Subscriber map_sub_;
     ros::Subscriber cloud_sub_;
+    std::shared_ptr<tf2_ros::TransformListener> tfl_;
+    std::shared_ptr<tf2_ros::Buffer> tf_;
 
     CloudTypePtr map_cloud_ptr_;
     bool is_map_received_;
-    geometry_msgs::PoseWithCovarianceStamped received_pose_;
+    nav_msgs::Odometry received_pose_;
     bool is_pose_updated_;
 
     // ndt params

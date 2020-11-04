@@ -30,9 +30,13 @@ MapMatcher::MapMatcher(void)
     map_cloud_ptr_ = CloudTypePtr(new CloudType);
     is_map_received_ = false;
     is_pose_updated_ = false;
+
+    tf_ = std::make_shared<tf2_ros::Buffer>();
+    tf_->setUsingDedicatedThread(true);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_);
 }
 
-void MapMatcher::pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
+void MapMatcher::pose_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     is_pose_updated_ = true;
     received_pose_ = *msg;
@@ -57,6 +61,9 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
         CloudTypePtr cloud_ptr(new CloudType);
         pcl::fromROSMsg(*msg, *cloud_ptr);
         apply_voxel_grid_filter(leaf_size_, cloud_ptr);
+        const geometry_msgs::TransformStamped sensor_to_base_tf = tf_->lookupTransform(received_pose_.child_frame_id, msg->header.frame_id, ros::Time(0));
+        const Eigen::Matrix4f sensor_to_base_mat = tf2::transformToEigen(sensor_to_base_tf.transform).matrix().cast<float>();
+        pcl::transformPointCloud(*cloud_ptr, *cloud_ptr, sensor_to_base_mat);
         const Eigen::Matrix4f transform = get_ndt_transform(cloud_ptr);
         if(transform.isZero(1e-6)){
             return;
