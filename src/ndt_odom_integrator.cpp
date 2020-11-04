@@ -92,9 +92,6 @@ void NDTOdomIntegrator::ndt_pose_callback(const geometry_msgs::PoseStampedConstP
     estimated_pose.child_frame_id = robot_frame_id_;
     estimated_pose.pose = p;
     estimated_pose_pub_.publish(estimated_pose);
-    if(enable_tf_){
-        publish_map_to_odom_tf(estimated_pose.header.stamp, estimated_pose.pose.pose);
-    }
 }
 
 void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
