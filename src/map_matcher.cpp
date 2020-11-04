@@ -77,7 +77,7 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
         is_pose_updated_ = false;
     }else{
         if(!is_pose_updated_){
-            ROS_WARN_THROTTLE(1.0, "cloud is received but pose has not been udpated");
+            ROS_WARN_THROTTLE(1.0, "cloud is received but pose has not been updated");
         }
         if(!is_map_received_){
             ROS_WARN_THROTTLE(1.0, "cloud is received but map has not been received");
