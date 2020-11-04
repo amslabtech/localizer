@@ -241,7 +241,10 @@ void NDTOdomIntegrator::predict_by_odom(const Eigen::Vector3d& dp)
     const double sry = sin(ry);
     const double crz = cos(rz);
     const double srz = sin(rz);
-    
+
+    // ROS_INFO("predict by odom");
+    // ROS_INFO_STREAM("x: " << x_.transpose());
+    // ROS_INFO_STREAM("p:\n" << p_);
     // f(x)
     Eigen::VectorXd f(state_dim_);
     f.segment(0, position_dim_) = x_.segment(0, position_dim_) + get_rotation_matrix(rx, ry, rz) * dp;
@@ -263,6 +266,8 @@ void NDTOdomIntegrator::predict_by_odom(const Eigen::Vector3d& dp)
 
     x_ = f;
     p_ = jf * p_ * jf.transpose() + q_odom_;
+    // ROS_INFO_STREAM("x: " << x_.transpose());
+    // ROS_INFO_STREAM("p:\n" << p_);
 }
 
 void NDTOdomIntegrator::predict_by_imu(const Eigen::Vector3d& dr)
@@ -280,6 +285,9 @@ void NDTOdomIntegrator::predict_by_imu(const Eigen::Vector3d& dr)
     const double srz = sin(rz);
     const double t_rz = tan(rz);
 
+    // ROS_INFO("predict by imu");
+    // ROS_INFO_STREAM("x: " << x_.transpose());
+    // ROS_INFO_STREAM("p:\n" << p_);
     Eigen::Matrix3d rot;
     rot << 1.0, srx * t_ry, crx * t_ry,
            0.0,        crx,       -srx,
@@ -308,23 +316,34 @@ void NDTOdomIntegrator::predict_by_imu(const Eigen::Vector3d& dr)
 
     x_ = f;
     p_ = jf * p_ * jf.transpose() + q_imu_;
+    // ROS_INFO_STREAM("x: " << x_.transpose());
+    // ROS_INFO_STREAM("p:\n" << p_);
 }
 
 void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
 {
+    // ROS_INFO("update by ndt");
+    // ROS_INFO_STREAM("x: " << x_.transpose());
+    // ROS_INFO_STREAM("p:\n" << p_);
     const Eigen::VectorXd z = pose;
+    // ROS_INFO_STREAM("z:\n" << z.transpose());
     const Eigen::MatrixXd jh = Eigen::MatrixXd::Identity(state_dim_, state_dim_);
     Eigen::VectorXd y = z - x_;
     for(unsigned int i=position_dim_;i<state_dim_;++i){
         y(i) = atan2(sin(y(i)), cos(y(i)));
     }
+    // ROS_INFO_STREAM("y:\n" << y.transpose());
     const Eigen::MatrixXd s = jh * p_ * jh.transpose() + r_;
+    // ROS_INFO_STREAM("s:\n" << s);
     const Eigen::MatrixXd k = p_ * jh.transpose() * s.inverse();
+    // ROS_INFO_STREAM("k:\n" << k);
     x_ = x_ + k * y;
     for(unsigned int i=position_dim_;i<state_dim_;++i){
         x_(i) = atan2(sin(x_(i)), cos(x_(i)));
     }
     p_ = (Eigen::MatrixXd::Identity(state_dim_, state_dim_) - k * jh) * p_;
+    // ROS_INFO_STREAM("x: " << x_.transpose());
+    // ROS_INFO_STREAM("p:\n" << p_);
 }
 
 Eigen::Matrix3d NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch, double yaw)

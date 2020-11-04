@@ -60,7 +60,9 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     if(is_map_received_ && is_pose_updated_){
         CloudTypePtr cloud_ptr(new CloudType);
         pcl::fromROSMsg(*msg, *cloud_ptr);
+        // ROS_INFO_STREAM("bfr: " << cloud_ptr->points.size());
         apply_voxel_grid_filter(leaf_size_, cloud_ptr);
+        // ROS_INFO_STREAM("aft: " << cloud_ptr->points.size());
         const geometry_msgs::TransformStamped sensor_to_base_tf = tf_->lookupTransform(received_pose_.child_frame_id, msg->header.frame_id, ros::Time(0));
         const Eigen::Matrix4f sensor_to_base_mat = tf2::transformToEigen(sensor_to_base_tf.transform).matrix().cast<float>();
         pcl::transformPointCloud(*cloud_ptr, *cloud_ptr, sensor_to_base_mat);
@@ -68,6 +70,7 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
         if(transform.isZero(1e-6)){
             return;
         }
+        ROS_INFO_STREAM("transform:\n" << transform);
         geometry_msgs::PoseStamped aligned_pose;
         aligned_pose.header.stamp = msg->header.stamp;
         aligned_pose.header.frame_id = map_cloud_ptr_->header.frame_id;
@@ -80,6 +83,7 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
         aligned_pose.pose.orientation.x = q.x();
         aligned_pose.pose.orientation.y = q.y();
         aligned_pose.pose.orientation.z = q.z();
+        ROS_INFO_STREAM("aligned pose:\n" << aligned_pose.pose);
         pose_pub_.publish(aligned_pose);
         is_pose_updated_ = false;
     }else{
@@ -104,10 +108,14 @@ Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
                                                              received_pose_.pose.pose.orientation.z
                                                              ).normalized());
     const Eigen::Matrix4f init_guess = (init_translation * init_rotation).matrix();
+    ROS_INFO_STREAM("init_guess:\n" << init_guess);
     CloudTypePtr filtered_map_cloud_ptr(new CloudType);
     apply_passthrough_filter(range_, map_cloud_ptr_, filtered_map_cloud_ptr, translation_vector);
     CloudTypePtr filtered_scan_cloud_ptr(new CloudType);
     apply_passthrough_filter(range_, cloud_ptr, filtered_scan_cloud_ptr);
+    ROS_INFO_STREAM("scan size: " << filtered_scan_cloud_ptr->points.size());
+    ROS_INFO_STREAM("map size: " << filtered_map_cloud_ptr->points.size());
+    // ROS_INFO_STREAM("received_pose:\n" << received_pose_.pose.pose);
 
     pclomp::NormalDistributionsTransform<PointType, PointType> ndt;
     ndt.setTransformationEpsilon(epsilon_);
@@ -124,6 +132,7 @@ Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
         ROS_ERROR("ndt not converged!");
         return Eigen::Matrix4f::Zero();
     }
+    ROS_INFO_STREAM("score: " << ndt.getFitnessScore());
     if(cloud_pub_.getNumSubscribers() > 0){
         sensor_msgs::PointCloud2 aligned_cloud_msg;
         aligned_cloud_ptr->header.frame_id = map_cloud_ptr_->header.frame_id;
