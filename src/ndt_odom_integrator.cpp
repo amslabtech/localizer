@@ -10,8 +10,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
     ndt_pose_sub_ = nh_.subscribe("ndt_pose", 1, &NDTOdomIntegrator::ndt_pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     odom_sub_ = nh_.subscribe("odom", 1, &NDTOdomIntegrator::odom_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     imu_sub_ = nh_.subscribe("imu/data", 1, &NDTOdomIntegrator::imu_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
-    map_sub_ = nh_.subscribe("map_cloud", 1, &NDTOdomIntegrator::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
-    init_pose_sub_ = nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
+    map_sub_ = nh_.subscribe("map_cloud", 1, &NDTOdomIntegrator::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
+    init_pose_sub_ = nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
 
     local_nh_.param<double>("init_sigma_position", init_sigma_position_, 10);
     local_nh_.param<double>("init_sigma_orientation", init_sigma_orientation_, M_PI);
@@ -310,6 +310,7 @@ void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
 {
     const Eigen::VectorXd z = pose;
     const Eigen::MatrixXd jh = Eigen::MatrixXd::Identity(state_dim_, state_dim_);
+    Eigen::VectorXd y = z - x_;
     for(unsigned int i=position_dim_;i<state_dim_;++i){
         y(i) = atan2(sin(y(i)), cos(y(i)));
     }
@@ -324,8 +325,8 @@ void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
 
 Eigen::Matrix3d NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch, double yaw)
 {
-    const Eigen::Matrix3d rot = Eigen::Quaterniond(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()) * 
-                                                   Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) * 
+    const Eigen::Matrix3d rot = Eigen::Quaterniond(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()) *
+                                                   Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
                                                    Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ())).matrix();
     return rot;
 }

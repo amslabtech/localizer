@@ -118,6 +118,7 @@ Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
     }
     if(cloud_pub_.getNumSubscribers() > 0){
         sensor_msgs::PointCloud2 aligned_cloud_msg;
+        aligned_cloud_ptr->header.frame_id = map_cloud_ptr_->header.frame_id;
         pcl::toROSMsg(*aligned_cloud_ptr, aligned_cloud_msg);
         cloud_pub_.publish(aligned_cloud_msg);
     }
@@ -131,7 +132,8 @@ void MapMatcher::apply_voxel_grid_filter(double leaf_size, CloudTypePtr& cloud_p
     vg.setLeafSize(leaf_size, leaf_size, leaf_size);
     CloudTypePtr output_cloud_ptr(new CloudType);
     vg.filter(*output_cloud_ptr);
-    pcl::copyPointCloud(*output_cloud_ptr, *cloud_ptr);
+    // pcl::copyPointCloud(*output_cloud_ptr, *cloud_ptr);
+    *cloud_ptr = *output_cloud_ptr;
 }
 
 void MapMatcher::apply_passthrough_filter(double range, const CloudTypePtr& cloud_ptr, CloudTypePtr& output_cloud_ptr, const Eigen::Vector3f& center)
