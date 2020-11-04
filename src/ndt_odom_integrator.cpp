@@ -56,7 +56,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
     q_odom_ = Eigen::MatrixXd::Zero(state_dim_, state_dim_);
     q_odom_.block(0, 0, position_dim_, position_dim_) = sigma_odom_ * Eigen::MatrixXd::Identity(position_dim_, position_dim_);
     q_imu_ = Eigen::MatrixXd::Zero(state_dim_, state_dim_);
-    q_imu_.block(0, 0, position_dim_, position_dim_) = sigma_odom_ * Eigen::MatrixXd::Identity(position_dim_, position_dim_);
+    q_imu_.block(position_dim_, position_dim_, orientation_dim_, orientation_dim_) =
+        sigma_imu_ * Eigen::MatrixXd::Identity(orientation_dim_, orientation_dim_);
     r_ = sigma_ndt_ * Eigen::MatrixXd::Identity(state_dim_, state_dim_);
 
     last_odom_stamp_ = ros::Time(0);
