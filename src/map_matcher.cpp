@@ -110,6 +110,7 @@ Eigen::Matrix4f MapMatcher::get_ndt_transform(const CloudTypePtr& cloud_ptr)
     ndt.setInputSource(filtered_scan_cloud_ptr);
     ndt.setInputTarget(filtered_map_cloud_ptr);
     ndt.setNumThreads(std::thread::hardware_concurrency());
+    ndt.setNeighborhoodSearchMethod(pclomp::DIRECT7);
     CloudTypePtr aligned_cloud_ptr(new CloudType);
     ndt.align(*aligned_cloud_ptr, init_guess);
     if(!ndt.hasConverged()){
