@@ -60,6 +60,8 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     if(is_map_received_ && is_pose_updated_){
         CloudTypePtr cloud_ptr(new CloudType);
         pcl::fromROSMsg(*msg, *cloud_ptr);
+        cloud_ptr->is_dense = false;
+        cloud_ptr->width = cloud_ptr->points.size();
         // ROS_INFO_STREAM("bfr: " << cloud_ptr->points.size());
         apply_voxel_grid_filter(leaf_size_, cloud_ptr);
         // ROS_INFO_STREAM("aft: " << cloud_ptr->points.size());
