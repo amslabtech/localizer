@@ -8,9 +8,9 @@ MapMatcher::MapMatcher(void)
     pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("ndt_pose", 1);
     cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud/aligned", 1);
     downsampled_map_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("map_cloud/downsampled", 1, true);
-    pose_sub_ = nh_.subscribe("estimated_pose", 1, &MapMatcher::pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
-    map_sub_ = nh_.subscribe("map_cloud", 1, &MapMatcher::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
-    cloud_sub_ = nh_.subscribe("scan_cloud", 1, &MapMatcher::cloud_callback, this, ros::TransportHints().reliable().tcpNoDelay(true)); 
+    pose_sub_ = nh_.subscribe("estimated_pose", 1, &MapMatcher::pose_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
+    map_sub_ = nh_.subscribe("map_cloud", 1, &MapMatcher::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
+    cloud_sub_ = nh_.subscribe("scan_cloud", 1, &MapMatcher::cloud_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
 
     local_nh_.param<double>("epsilon", epsilon_, 1e-8);
     local_nh_.param<double>("leaf_size", leaf_size_, 0.1);

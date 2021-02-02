@@ -25,7 +25,7 @@
 
 namespace ndt_localizer
 {
-class MapMatcher 
+class MapMatcher
 {
 public:
     typedef pcl::PointXYZ PointType;
