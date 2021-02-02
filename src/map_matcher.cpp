@@ -12,11 +12,11 @@ MapMatcher::MapMatcher(void)
     map_sub_ = nh_.subscribe("map_cloud", 1, &MapMatcher::map_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
     cloud_sub_ = nh_.subscribe("scan_cloud", 1, &MapMatcher::cloud_callback, this, ros::TransportHints().reliable().tcpNoDelay(true));
 
-    local_nh_.param<double>("epsilon", epsilon_, 1e-8);
-    local_nh_.param<double>("leaf_size", leaf_size_, 0.1);
+    local_nh_.param<double>("epsilon", epsilon_, 1e-2);
+    local_nh_.param<double>("leaf_size", leaf_size_, 0.5);
     local_nh_.param<double>("step_size", step_size_, 0.1);
     local_nh_.param<double>("resolution", resolution_, 1.0);
-    local_nh_.param<int>("max_iterations", max_iterations_, 100);
+    local_nh_.param<int>("max_iterations", max_iterations_, 30);
     local_nh_.param<double>("range", range_, 100);
 
     ROS_INFO("=== map_matcher ===");
