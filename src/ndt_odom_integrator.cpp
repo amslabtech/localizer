@@ -146,13 +146,6 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
         const double dt = (stamp - last_imu_stamp_).toSec();
         const Eigen::Vector3d dr = {dt * msg->angular_velocity.x, dt * msg->angular_velocity.y, dt * msg->angular_velocity.z};
         predict_by_imu(dr);
-        const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-        nav_msgs::Odometry estimated_pose;
-        estimated_pose.header.frame_id = map_frame_id_;
-        estimated_pose.header.stamp = msg->header.stamp;
-        estimated_pose.child_frame_id = robot_frame_id_;
-        estimated_pose.pose = p;
-        estimated_pose_pub_.publish(estimated_pose);
     }else{
         // first callback
     }
@@ -320,28 +313,28 @@ void NDTOdomIntegrator::predict_by_imu(const Eigen::Vector3d& dr)
 
 void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
 {
-    // ROS_INFO("update by ndt");
-    // ROS_INFO_STREAM("x: " << x_.transpose());
-    // ROS_INFO_STREAM("p:\n" << p_);
+    ROS_INFO("update by ndt");
+    ROS_INFO_STREAM("x: " << x_.transpose());
+    ROS_INFO_STREAM("p:\n" << p_);
     const Eigen::VectorXd z = pose;
-    // ROS_INFO_STREAM("z:\n" << z.transpose());
+    ROS_INFO_STREAM("z:\n" << z.transpose());
     const Eigen::MatrixXd jh = Eigen::MatrixXd::Identity(state_dim_, state_dim_);
     Eigen::VectorXd y = z - x_;
     for(unsigned int i=position_dim_;i<state_dim_;++i){
         y(i) = atan2(sin(y(i)), cos(y(i)));
     }
-    // ROS_INFO_STREAM("y:\n" << y.transpose());
+    ROS_INFO_STREAM("y:\n" << y.transpose());
     const Eigen::MatrixXd s = jh * p_ * jh.transpose() + r_;
-    // ROS_INFO_STREAM("s:\n" << s);
+    ROS_INFO_STREAM("s:\n" << s);
     const Eigen::MatrixXd k = p_ * jh.transpose() * s.inverse();
-    // ROS_INFO_STREAM("k:\n" << k);
+    ROS_INFO_STREAM("k:\n" << k);
     x_ = x_ + k * y;
     for(unsigned int i=position_dim_;i<state_dim_;++i){
         x_(i) = atan2(sin(x_(i)), cos(x_(i)));
     }
     p_ = (Eigen::MatrixXd::Identity(state_dim_, state_dim_) - k * jh) * p_;
-    // ROS_INFO_STREAM("x: " << x_.transpose());
-    // ROS_INFO_STREAM("p:\n" << p_);
+    ROS_INFO_STREAM("x: " << x_.transpose());
+    ROS_INFO_STREAM("p:\n" << p_);
 }
 
 Eigen::Matrix3d NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch, double yaw)
