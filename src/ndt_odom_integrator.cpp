@@ -144,7 +144,8 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
     const ros::Time stamp = msg->header.stamp;
     if(last_imu_stamp_ != ros::Time(0)){
         const double dt = (stamp - last_imu_stamp_).toSec();
-        const Eigen::Vector3d dr = {dt * msg->angular_velocity.x, dt * msg->angular_velocity.y, dt * msg->angular_velocity.z};
+        Eigen::Vector3d dr = {dt * msg->angular_velocity.x, dt * msg->angular_velocity.y, dt * msg->angular_velocity.z};
+        dr = Eigen::Vector3d(dr(1), dr(0), -dr(2));
         predict_by_imu(dr);
     }else{
         // first callback

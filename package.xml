@@ -27,6 +27,7 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>libeigen3-dev</depend>
   <depend>libpcl-all-dev</depend>
+  <depend>ndt_omp</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
