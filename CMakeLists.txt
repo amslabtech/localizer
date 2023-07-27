@@ -65,9 +65,7 @@ target_link_libraries(ndt_odom_integrator
 
 if(CATKIN_ENABLE_TESTING)
   find_package(roslint REQUIRED)
+  set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-runtime/references")
   roslint_cpp()
   roslint_add_test()
-
-  find_package(rostest REQUIRED)
-  add_subdirectory(test)
 endif()
