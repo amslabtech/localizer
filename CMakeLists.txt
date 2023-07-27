@@ -62,3 +62,12 @@ target_link_libraries(map_matcher
 target_link_libraries(ndt_odom_integrator
     ${catkin_LIBRARIES}
 )
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(roslint REQUIRED)
+  roslint_cpp()
+  roslint_add_test()
+
+  find_package(rostest REQUIRED)
+  add_subdirectory(test)
+endif()
