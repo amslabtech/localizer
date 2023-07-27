@@ -1,0 +1,4 @@
+- git:
+  local-name: ndt_omp
+  uri: https://github.com/koide3/ndt_omp
+  version: master
