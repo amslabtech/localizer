@@ -7,24 +7,27 @@
 namespace ndt_localizer
 {
 NDTOdomIntegrator::NDTOdomIntegrator(void)
-  : local_nh_("~")
+  : local_nh_("~"),
+    odom_sub_(nh_, "odom", 10), imu_sub_(nh_, "imu/data", 10), sync_subs_(sync_policy(10), odom_sub_, imu_sub_)
 {
   ROS_INFO("=== ndt_odom_integrator ===");
   estimated_pose_pub_ = nh_.advertise<nav_msgs::Odometry>("estimated_pose", 1);
   ndt_pose_sub_ =
       nh_.subscribe("ndt_pose", 1, &NDTOdomIntegrator::ndt_pose_callback, this,
                     ros::TransportHints().reliable().tcpNoDelay(true));
-  odom_sub_ = nh_.subscribe("odom", 1, &NDTOdomIntegrator::odom_callback, this,
-                            ros::TransportHints().reliable().tcpNoDelay(true));
-  imu_sub_ =
-      nh_.subscribe("imu/data", 1, &NDTOdomIntegrator::imu_callback, this,
-                    ros::TransportHints().reliable().tcpNoDelay(true));
+  // odom_sub_ = nh_.subscribe("odom", 1, &NDTOdomIntegrator::odom_callback, this,
+  //                           ros::TransportHints().reliable().tcpNoDelay(true));
+  // imu_sub_ =
+  //     nh_.subscribe("imu/data", 1, &NDTOdomIntegrator::imu_callback, this,
+  //                   ros::TransportHints().reliable().tcpNoDelay(true));
   map_sub_ =
       nh_.subscribe("map_cloud", 1, &NDTOdomIntegrator::map_callback, this,
                     ros::TransportHints().reliable().tcpNoDelay(true));
   init_pose_sub_ =
       nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback,
                     this, ros::TransportHints().reliable().tcpNoDelay(true));
+
+  sync_subs_.registerCallback(boost::bind(&NDTOdomIntegrator::odom_and_imu_callback, this, _1, _2));
 
   local_nh_.param<double>("init_sigma_position", init_sigma_position_, 10);
   local_nh_.param<double>("init_sigma_orientation", init_sigma_orientation_,
@@ -110,42 +113,126 @@ void NDTOdomIntegrator::ndt_pose_callback(
   estimated_pose_pub_.publish(estimated_pose);
 }
 
-void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
-{
-  if (enable_odom_tf_)
-  {
-    geometry_msgs::TransformStamped odom_to_robot_tf;
-    odom_to_robot_tf.header = msg->header;
-    odom_to_robot_tf.child_frame_id = msg->child_frame_id;
-    odom_to_robot_tf.transform.translation.x = msg->pose.pose.position.x;
-    odom_to_robot_tf.transform.translation.y = msg->pose.pose.position.y;
-    odom_to_robot_tf.transform.translation.z = msg->pose.pose.position.z;
-    odom_to_robot_tf.transform.rotation = msg->pose.pose.orientation;
-    tfb_->sendTransform(odom_to_robot_tf);
-  }
+// void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
+// {
+//   if (enable_odom_tf_)
+//   {
+//     geometry_msgs::TransformStamped odom_to_robot_tf;
+//     odom_to_robot_tf.header = msg->header;
+//     odom_to_robot_tf.child_frame_id = msg->child_frame_id;
+//     odom_to_robot_tf.transform.translation.x = msg->pose.pose.position.x;
+//     odom_to_robot_tf.transform.translation.y = msg->pose.pose.position.y;
+//     odom_to_robot_tf.transform.translation.z = msg->pose.pose.position.z;
+//     odom_to_robot_tf.transform.rotation = msg->pose.pose.orientation;
+//     tfb_->sendTransform(odom_to_robot_tf);
+//   }
+//
+//   if (map_frame_id_.empty())
+//   {
+//     ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
+//     return;
+//   }
+//   const ros::Time stamp = msg->header.stamp;
+//   odom_frame_id_ = msg->header.frame_id;
+//   robot_frame_id_ = msg->child_frame_id;
+//   if (last_odom_stamp_ != ros::Time(0))
+//   {
+//     const double dt = (stamp - last_odom_stamp_).toSec();
+//     const Eigen::Vector3d dp =
+//         {
+//             dt * msg->twist.twist.linear.x,
+//             dt * msg->twist.twist.linear.y,
+//             dt * msg->twist.twist.linear.z,
+//         };
+//     predict_by_odom(dp);
+//     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
+//     nav_msgs::Odometry estimated_pose;
+//     estimated_pose.header.frame_id = map_frame_id_;
+//     estimated_pose.header.stamp = msg->header.stamp;
+//     estimated_pose.child_frame_id = robot_frame_id_;
+//     estimated_pose.pose = p;
+//     estimated_pose_pub_.publish(estimated_pose);
+//     if (enable_tf_)
+//     {
+//       publish_map_to_odom_tf(estimated_pose.header.stamp,
+//                              estimated_pose.pose.pose);
+//     }
+//   }
+//   else
+//   {
+//     // first callback
+//   }
+//   last_odom_stamp_ = stamp;
+// }
+//
+// void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
+// {
+//   if (map_frame_id_.empty())
+//   {
+//     ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
+//     return;
+//   }
+//   const ros::Time stamp = msg->header.stamp;
+//   if (last_imu_stamp_ != ros::Time(0))
+//   {
+//     const double dt = (stamp - last_imu_stamp_).toSec();
+//     Eigen::Vector3d dr =
+//         {
+//             dt * msg->angular_velocity.x,
+//             dt * msg->angular_velocity.y,
+//             dt * msg->angular_velocity.z,
+//         };
+//     dr = Eigen::Vector3d(dr(1), dr(0), -dr(2));
+//     predict_by_imu(dr);
+//   }
+//   else
+//   {
+//     // first callback
+//   }
+//   last_imu_stamp_ = stamp;
+// }
+//
 
+
+void NDTOdomIntegrator::odom_and_imu_callback(
+    const nav_msgs::OdometryConstPtr& msg1, const sensor_msgs::ImuConstPtr& msg2)
+{
   if (map_frame_id_.empty())
   {
     ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
     return;
   }
-  const ros::Time stamp = msg->header.stamp;
-  odom_frame_id_ = msg->header.frame_id;
-  robot_frame_id_ = msg->child_frame_id;
-  if (last_odom_stamp_ != ros::Time(0))
+
+  if (enable_odom_tf_)
   {
-    const double dt = (stamp - last_odom_stamp_).toSec();
+    geometry_msgs::TransformStamped odom_to_robot_tf;
+    odom_to_robot_tf.header = msg1->header;
+    odom_to_robot_tf.child_frame_id = msg1->child_frame_id;
+    odom_to_robot_tf.transform.translation.x = msg1->pose.pose.position.x;
+    odom_to_robot_tf.transform.translation.y = msg1->pose.pose.position.y;
+    odom_to_robot_tf.transform.translation.z = msg1->pose.pose.position.z;
+    odom_to_robot_tf.transform.rotation = msg1->pose.pose.orientation;
+    tfb_->sendTransform(odom_to_robot_tf);
+  }
+
+  const ros::Time stamp_odom = msg1->header.stamp;
+  const ros::Time stamp_imu  = msg2->header.stamp;
+  odom_frame_id_ = msg1->header.frame_id;
+  robot_frame_id_ = msg1->child_frame_id;
+  if ((last_odom_stamp_ != ros::Time(0)) && (last_imu_stamp_ != ros::Time(0)))
+  {
+    const double dt_odom = (stamp_odom - last_odom_stamp_).toSec();
     const Eigen::Vector3d dp =
         {
-            dt * msg->twist.twist.linear.x,
-            dt * msg->twist.twist.linear.y,
-            dt * msg->twist.twist.linear.z,
+            dt_odom * msg1->twist.twist.linear.x,
+            dt_odom * msg1->twist.twist.linear.y,
+            dt_odom * msg1->twist.twist.linear.z,
         };
     predict_by_odom(dp);
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
     nav_msgs::Odometry estimated_pose;
     estimated_pose.header.frame_id = map_frame_id_;
-    estimated_pose.header.stamp = msg->header.stamp;
+    estimated_pose.header.stamp = msg1->header.stamp;
     estimated_pose.child_frame_id = robot_frame_id_;
     estimated_pose.pose = p;
     estimated_pose_pub_.publish(estimated_pose);
@@ -154,39 +241,27 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
       publish_map_to_odom_tf(estimated_pose.header.stamp,
                              estimated_pose.pose.pose);
     }
-  }
-  else
-  {
-    // first callback
-  }
-  last_odom_stamp_ = stamp;
-}
 
-void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
-{
-  if (map_frame_id_.empty())
-  {
-    ROS_ERROR_THROTTLE(3.0, "frame_id is empty");
-    return;
-  }
-  const ros::Time stamp = msg->header.stamp;
-  if (last_imu_stamp_ != ros::Time(0))
-  {
-    const double dt = (stamp - last_imu_stamp_).toSec();
-    const Eigen::Vector3d dr =
+    const double dt_imu = (stamp_imu - last_imu_stamp_).toSec();
+    Eigen::Vector3d dr =
         {
-            dt * msg->angular_velocity.x,
-            dt * msg->angular_velocity.y,
-            dt * msg->angular_velocity.z,
+            dt_imu * msg2->angular_velocity.x,
+            dt_imu * msg2->angular_velocity.y,
+            dt_imu * msg2->angular_velocity.z,
         };
+    dr = Eigen::Vector3d(dr(1), dr(0), -dr(2));
     predict_by_imu(dr);
   }
   else
   {
     // first callback
   }
-  last_imu_stamp_ = stamp;
+
+  last_odom_stamp_ = stamp_odom;
+  last_imu_stamp_ = stamp_imu;
 }
+
+
 
 void NDTOdomIntegrator::map_callback(
     const sensor_msgs::PointCloud2ConstPtr& msg)
