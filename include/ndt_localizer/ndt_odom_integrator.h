@@ -21,10 +21,6 @@
 
 #include <Eigen/Dense>
 
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
-
 namespace ndt_localizer
 {
 class NDTOdomIntegrator
@@ -32,11 +28,8 @@ class NDTOdomIntegrator
 public:
   NDTOdomIntegrator(void);
   void ndt_pose_callback(const geometry_msgs::PoseStampedConstPtr& msg);
-  // void odom_callback(const nav_msgs::OdometryConstPtr& msg);
-  // void imu_callback(const sensor_msgs::ImuConstPtr& msg);
-
-  void odom_and_imu_callback(const nav_msgs::OdometryConstPtr& msg1, const sensor_msgs::ImuConstPtr& msg2);
-
+  void odom_callback(const nav_msgs::OdometryConstPtr& msg);
+  void imu_callback(const sensor_msgs::ImuConstPtr& msg);
   void map_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
   void init_pose_callback(
       const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
@@ -56,15 +49,10 @@ private:
   ros::NodeHandle local_nh_;
   ros::Publisher estimated_pose_pub_;
   ros::Subscriber ndt_pose_sub_;
-  // ros::Subscriber odom_sub_;
-  // ros::Subscriber imu_sub_;
+  ros::Subscriber odom_sub_;
+  ros::Subscriber imu_sub_;
   ros::Subscriber map_sub_;
   ros::Subscriber init_pose_sub_;
-
-  message_filters::Subscriber<nav_msgs::Odometry> odom_sub_;
-  message_filters::Subscriber<sensor_msgs::Imu> imu_sub_;
-  typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, sensor_msgs::Imu> sync_policy;
-  message_filters::Synchronizer<sync_policy> sync_subs_;
 
   double init_sigma_position_;
   double init_sigma_orientation_;
