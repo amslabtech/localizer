@@ -96,6 +96,8 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     {
       return;
     }
+    ROS_INFO_STREAM("recieve timestamp : " << received_pose_.header.stamp);
+
     ROS_INFO_STREAM("transform:\n"
                     << transform);
     geometry_msgs::PoseStamped aligned_pose;
@@ -110,8 +112,11 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     aligned_pose.pose.orientation.x = q.x();
     aligned_pose.pose.orientation.y = q.y();
     aligned_pose.pose.orientation.z = q.z();
+
     ROS_INFO_STREAM("aligned pose:\n"
                     << aligned_pose.pose);
+    ROS_INFO_STREAM("aligned Yaw : " << tf2::getYaw(aligned_pose.pose.orientation));
+    ROS_INFO("aligned header stamp:%.3f ",  aligned_pose.header.stamp.toSec());
     pose_pub_.publish(aligned_pose);
     is_pose_updated_ = false;
   }

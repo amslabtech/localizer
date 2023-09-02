@@ -15,6 +15,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+#include <tf2/utils.h>
 
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
