@@ -32,7 +32,6 @@ public:
   void odom_callback(const nav_msgs::OdometryConstPtr& msg);
   void imu_callback(const sensor_msgs::ImuConstPtr& msg);
   void map_callback(const sensor_msgs::PointCloud2ConstPtr& msg);
-  void sent_pose_callback(const nav_msgs::OdometryConstPtr& msg);
   void init_pose_callback(
       const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
   void initialize_state(double x, double y, double z, double roll, double pitch,
@@ -55,7 +54,6 @@ private:
   ros::Subscriber imu_sub_;
   ros::Subscriber map_sub_;
   ros::Subscriber init_pose_sub_;
-  ros::Subscriber sent_pose_sub_;
 
   double init_sigma_position_;
   double init_sigma_orientation_;
@@ -71,14 +69,14 @@ private:
   unsigned int state_dim_;
   unsigned int position_dim_;
   unsigned int orientation_dim_;
-  int pose_queue_size_;
+  int queue_size_;
+  std::vector<nav_msgs::Odometry> odom_queue_;
+  std::vector<sensor_msgs::Imu> imu_queue_;
   Eigen::VectorXd x_;
   Eigen::MatrixXd p_;
   Eigen::MatrixXd q_odom_;
   Eigen::MatrixXd q_imu_;
   Eigen::MatrixXd r_;
-  std::vector<nav_msgs::Odometry> pose_queue_;
-  nav_msgs::Odometry sent_pose_;
   ros::Time last_odom_stamp_;
   ros::Time last_imu_stamp_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;

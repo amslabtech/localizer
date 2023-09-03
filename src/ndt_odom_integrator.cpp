@@ -1,5 +1,6 @@
 // Copyright 2023 amsl
 
+#include <iterator>
 #include <memory>
 
 #include "ndt_localizer/ndt_odom_integrator.h"
@@ -23,8 +24,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
       nh_.subscribe("map_cloud", 1, &NDTOdomIntegrator::map_callback, this,
                     ros::TransportHints().reliable().tcpNoDelay(true));
   init_pose_sub_ =
-      nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback,
-                    this, ros::TransportHints().reliable().tcpNoDelay(true));
+      nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback, this,
+                    ros::TransportHints().reliable().tcpNoDelay(true));
 
   local_nh_.param<double>("init_sigma_position", init_sigma_position_, 10);
   local_nh_.param<double>("init_sigma_orientation", init_sigma_orientation_,
@@ -41,6 +42,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   local_nh_.param<double>("sigma_ndt", sigma_ndt_, 1e-2);
   local_nh_.param<bool>("enable_odom_tf", enable_odom_tf_, true);
   local_nh_.param<bool>("enable_tf", enable_tf_, true);
+  local_nh_.param<int>("queue_size", queue_size_, 1000);
 
   ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
   ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -55,6 +57,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   ROS_INFO_STREAM("sigma_ndt: " << sigma_ndt_);
   ROS_INFO_STREAM("enable_odom_tf: " << enable_odom_tf_);
   ROS_INFO_STREAM("enable_tf: " << enable_tf_);
+  ROS_INFO_STREAM("queue_size: " << queue_size_);
 
   tf_ = std::make_shared<tf2_ros::Buffer>();
   tf_->setUsingDedicatedThread(true);
@@ -77,6 +80,11 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
       Eigen::MatrixXd::Identity(orientation_dim_, orientation_dim_);
   r_ = sigma_ndt_ * Eigen::MatrixXd::Identity(state_dim_, state_dim_);
 
+  odom_queue_.clear();
+  imu_queue_.clear();
+  odom_queue_.reserve(queue_size_);
+  imu_queue_.reserve(queue_size_);
+
   last_odom_stamp_ = ros::Time(0);
   last_imu_stamp_ = ros::Time(0);
   map_frame_id_ = "";
@@ -98,17 +106,92 @@ void NDTOdomIntegrator::ndt_pose_callback(
   tf2::Matrix3x3 rot(q);
   rot.getRPY(roll, pitch, yaw);
   Eigen::VectorXd pose = Eigen::VectorXd::Zero(state_dim_);
-  pose << msg->pose.position.x, msg->pose.position.y, msg->pose.position.z,
-      roll, pitch, yaw;
+
+  pose << msg->pose.position.x,
+          msg->pose.position.y,
+          msg->pose.position.z,
+          roll, pitch, yaw;
+
   update_by_ndt_pose(pose);
+
+  // Motion Update For Delay
+  ros::Time sensor_update_stamp = msg->header.stamp;
+  std::vector<nav_msgs::Odometry>::iterator itr_odom = odom_queue_.begin();
+  std::vector<sensor_msgs::Imu>::iterator itr_imu = imu_queue_.begin();
+  Eigen::Vector3d dp_from_sensor_update;
+  Eigen::Vector3d dr_from_sensor_update;
+
+  ROS_INFO("~~~~~~~~~ Velodyne Updated at %f >> Odom_Size = %d, IMU_Size = %d ~~~~~~~~~", sensor_update_stamp.toSec(), odom_queue_.size(), imu_queue_.size());
+
+  while((itr_odom+1) != odom_queue_.end() && itr_odom->header.stamp >= sensor_update_stamp)
+  {
+
+      double dt = ((itr_odom+1)->header.stamp - itr_odom->header.stamp).toSec();
+      const Eigen::Vector3d dp =
+          {
+              dt * itr_odom->twist.twist.linear.x,
+              dt * itr_odom->twist.twist.linear.y,
+              dt * itr_odom->twist.twist.linear.z,
+          };
+      dp_from_sensor_update += dp;
+      itr_odom++;
+  }
+  while((itr_imu+1) != imu_queue_.end() && itr_imu->header.stamp >= sensor_update_stamp)
+  {
+
+      double dt = ((itr_imu+1)->header.stamp - itr_imu->header.stamp).toSec();
+      const Eigen::Vector3d dr =
+          {
+              dt * itr_imu->angular_velocity.x,
+              dt * itr_imu->angular_velocity.y,
+              dt * itr_imu->angular_velocity.z,
+          };
+      dr_from_sensor_update += dr;
+      itr_imu++;
+  }
+  dr_from_sensor_update = Eigen::Vector3d(dr_from_sensor_update(1), dr_from_sensor_update(0), -dr_from_sensor_update(2)); //Atode Kesu
+
+  predict_by_odom(dp_from_sensor_update);
+  predict_by_imu(dr_from_sensor_update);
+
+  // ROS_INFO("======= Fixed Delay -> dx dy dz dr dp dy : %.3f %.3f %.3f %.3f %.3f %.3f =======",dp_from_sensor_update[0],dp_from_sensor_update[1],dp_from_sensor_update[2],dr_from_sensor_update[0],dr_from_sensor_update[1],dr_from_sensor_update[2]);
+
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    // ROS_INFO("ndt time x y z r p y : %f %.3f %.3f %.3f %.3f %.3f %.3f", x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
   nav_msgs::Odometry estimated_pose;
   estimated_pose.header.frame_id = map_frame_id_;
   estimated_pose.header.stamp = msg->header.stamp;
   estimated_pose.child_frame_id = robot_frame_id_;
   estimated_pose.pose = p;
   estimated_pose_pub_.publish(estimated_pose);
+
+
+  ROS_WARN("NOW : %f     Sensor : %f", ros::Time::now().toSec(), sensor_update_stamp.toSec());
+
+  std::vector<nav_msgs::Odometry>::iterator itr_erase_odom = odom_queue_.begin();
+  std::vector<sensor_msgs::Imu>::iterator itr_erase_imu = imu_queue_.begin();
+  while(itr_erase_odom != odom_queue_.end())
+  {
+      if(itr_erase_odom->header.stamp < sensor_update_stamp)
+          odom_queue_.erase(itr_erase_odom);
+      else
+          itr_erase_odom++;
+  }
+  while(itr_erase_imu != imu_queue_.end())
+  {
+      if(itr_erase_imu->header.stamp < sensor_update_stamp)
+      {
+          ROS_WARN("ERASE --> %f", itr_erase_imu->header.stamp.toSec());
+          imu_queue_.erase(itr_erase_imu);
+      }
+      else
+          itr_erase_imu++;
+  }
+  // ROS_INFO("Odom queue size capacity after sensor update = %ld %ld", odom_queue_.size(), odom_queue_.capacity());
+  ROS_INFO("IMU queue size capacity after sensor update = %ld %ld", imu_queue_.size(), imu_queue_.capacity());
+  for(auto &p : imu_queue_){
+      ROS_WARN("imu -> %f ", p.header.stamp.toSec());
+  }
+  ROS_INFO("\n\n#######################################################################################################\n\n");
 }
 
 void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
@@ -144,14 +227,14 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
         };
     predict_by_odom(dp);
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    // ROS_INFO("odom : %.3f imu : %.3f", msg1->header.stamp.toSec(), msg2->header.stamp.toSec());
-    ROS_INFO("time x y z r p y : %.3f %.3f %.3f %.3f %.3f %.3f %.3f", msg->header.stamp.toSec(), x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
+    // ROS_INFO("***** Odom Callback at %f -> x y z r p y : %.3f %.3f %.3f %.3f %.3f %.3f *****", msg->header.stamp.toSec(), x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
     nav_msgs::Odometry estimated_pose;
     estimated_pose.header.frame_id = map_frame_id_;
     estimated_pose.header.stamp = msg->header.stamp;
     estimated_pose.child_frame_id = robot_frame_id_;
     estimated_pose.pose = p;
     estimated_pose_pub_.publish(estimated_pose);
+
     if (enable_tf_)
     {
       publish_map_to_odom_tf(estimated_pose.header.stamp,
@@ -163,6 +246,7 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
     // first callback
   }
   last_odom_stamp_ = stamp;
+  odom_queue_.push_back(*msg);
 }
 
 void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
@@ -191,6 +275,8 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
     // first callback
   }
   last_imu_stamp_ = stamp;
+  // ROS_WARN("===== IMU Callback at %f -> x y z r p y : %.3f %.3f %.3f %.3f %.3f %.3f =====", msg->header.stamp.toSec(), x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
+  imu_queue_.push_back(*msg);
 }
 
 void NDTOdomIntegrator::map_callback(
