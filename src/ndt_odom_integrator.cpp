@@ -118,8 +118,8 @@ void NDTOdomIntegrator::ndt_pose_callback(
   ros::Time sensor_update_stamp = msg->header.stamp;
   std::vector<nav_msgs::Odometry>::iterator itr_odom = odom_queue_.begin();
   std::vector<sensor_msgs::Imu>::iterator itr_imu = imu_queue_.begin();
-  Eigen::Vector3d dp_from_sensor_update = {0.0,0.0,0.0};
-  Eigen::Vector3d dr_from_sensor_update = {0.0,0.0,0.0};
+  // Eigen::Vector3d dp_from_sensor_update = {0.0,0.0,0.0};
+  // Eigen::Vector3d dr_from_sensor_update = {0.0,0.0,0.0};
 
   while((itr_odom+1) != odom_queue_.end())
   {
@@ -132,7 +132,8 @@ void NDTOdomIntegrator::ndt_pose_callback(
                   dt * itr_odom->twist.twist.linear.y,
                   dt * itr_odom->twist.twist.linear.z,
               };
-          dp_from_sensor_update += dp;
+          // dp_from_sensor_update += dp;
+          predict_by_odom(dp);
       }
       itr_odom++;
   }
@@ -148,13 +149,14 @@ void NDTOdomIntegrator::ndt_pose_callback(
                   dt * itr_imu->angular_velocity.y,
                   dt * itr_imu->angular_velocity.z,
               };
-          dr_from_sensor_update += dr;
+          // dr_from_sensor_update += dr;
+          predict_by_imu(dr);
       }
       itr_imu++;
   }
 
-  predict_by_odom(dp_from_sensor_update);
-  predict_by_imu(dr_from_sensor_update);
+  // predict_by_odom(dp_from_sensor_update);
+  // predict_by_imu(dr_from_sensor_update);
 
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
   nav_msgs::Odometry estimated_pose;
