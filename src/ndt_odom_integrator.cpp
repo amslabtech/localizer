@@ -118,43 +118,43 @@ void NDTOdomIntegrator::ndt_pose_callback(
   ros::Time sensor_update_stamp = msg->header.stamp;
   std::vector<nav_msgs::Odometry>::iterator itr_odom = odom_queue_.begin();
   std::vector<sensor_msgs::Imu>::iterator itr_imu = imu_queue_.begin();
-  Eigen::Vector3d dp_from_sensor_update;
-  Eigen::Vector3d dr_from_sensor_update;
+  Eigen::Vector3d dp_from_sensor_update = {0.0,0.0,0.0};
+  Eigen::Vector3d dr_from_sensor_update = {0.0,0.0,0.0};
 
-  ROS_INFO("~~~~~~~~~ Velodyne Updated at %f >> Odom_Size = %d, IMU_Size = %d ~~~~~~~~~", sensor_update_stamp.toSec(), odom_queue_.size(), imu_queue_.size());
-
-  while((itr_odom+1) != odom_queue_.end() && itr_odom->header.stamp >= sensor_update_stamp)
+  while((itr_odom+1) != odom_queue_.end())
   {
-
-      double dt = ((itr_odom+1)->header.stamp - itr_odom->header.stamp).toSec();
-      const Eigen::Vector3d dp =
-          {
-              dt * itr_odom->twist.twist.linear.x,
-              dt * itr_odom->twist.twist.linear.y,
-              dt * itr_odom->twist.twist.linear.z,
-          };
-      dp_from_sensor_update += dp;
+      if(itr_odom->header.stamp >= sensor_update_stamp)
+      {
+          double dt = ((itr_odom+1)->header.stamp - itr_odom->header.stamp).toSec();
+          const Eigen::Vector3d dp =
+              {
+                  dt * itr_odom->twist.twist.linear.x,
+                  dt * itr_odom->twist.twist.linear.y,
+                  dt * itr_odom->twist.twist.linear.z,
+              };
+          dp_from_sensor_update += dp;
+      }
       itr_odom++;
   }
-  while((itr_imu+1) != imu_queue_.end() && itr_imu->header.stamp >= sensor_update_stamp)
+  while((itr_imu+1) != imu_queue_.end())
   {
 
-      double dt = ((itr_imu+1)->header.stamp - itr_imu->header.stamp).toSec();
-      const Eigen::Vector3d dr =
-          {
-              dt * itr_imu->angular_velocity.x,
-              dt * itr_imu->angular_velocity.y,
-              dt * itr_imu->angular_velocity.z,
-          };
-      dr_from_sensor_update += dr;
+      if(itr_imu->header.stamp >= sensor_update_stamp)
+      {
+          double dt = ((itr_imu+1)->header.stamp - itr_imu->header.stamp).toSec();
+          const Eigen::Vector3d dr =
+              {
+                  dt * itr_imu->angular_velocity.x,
+                  dt * itr_imu->angular_velocity.y,
+                  dt * itr_imu->angular_velocity.z,
+              };
+          dr_from_sensor_update += dr;
+      }
       itr_imu++;
   }
-  dr_from_sensor_update = Eigen::Vector3d(dr_from_sensor_update(1), dr_from_sensor_update(0), -dr_from_sensor_update(2)); //Atode Kesu
 
   predict_by_odom(dp_from_sensor_update);
   predict_by_imu(dr_from_sensor_update);
-
-  // ROS_INFO("======= Fixed Delay -> dx dy dz dr dp dy : %.3f %.3f %.3f %.3f %.3f %.3f =======",dp_from_sensor_update[0],dp_from_sensor_update[1],dp_from_sensor_update[2],dr_from_sensor_update[0],dr_from_sensor_update[1],dr_from_sensor_update[2]);
 
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
   nav_msgs::Odometry estimated_pose;
@@ -163,9 +163,6 @@ void NDTOdomIntegrator::ndt_pose_callback(
   estimated_pose.child_frame_id = robot_frame_id_;
   estimated_pose.pose = p;
   estimated_pose_pub_.publish(estimated_pose);
-
-
-  ROS_WARN("NOW : %f     Sensor : %f", ros::Time::now().toSec(), sensor_update_stamp.toSec());
 
   std::vector<nav_msgs::Odometry>::iterator itr_erase_odom = odom_queue_.begin();
   std::vector<sensor_msgs::Imu>::iterator itr_erase_imu = imu_queue_.begin();
@@ -179,19 +176,10 @@ void NDTOdomIntegrator::ndt_pose_callback(
   while(itr_erase_imu != imu_queue_.end())
   {
       if(itr_erase_imu->header.stamp < sensor_update_stamp)
-      {
-          ROS_WARN("ERASE --> %f", itr_erase_imu->header.stamp.toSec());
           imu_queue_.erase(itr_erase_imu);
-      }
       else
           itr_erase_imu++;
   }
-  // ROS_INFO("Odom queue size capacity after sensor update = %ld %ld", odom_queue_.size(), odom_queue_.capacity());
-  ROS_INFO("IMU queue size capacity after sensor update = %ld %ld", imu_queue_.size(), imu_queue_.capacity());
-  for(auto &p : imu_queue_){
-      ROS_WARN("imu -> %f ", p.header.stamp.toSec());
-  }
-  ROS_INFO("\n\n#######################################################################################################\n\n");
 }
 
 void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
@@ -227,7 +215,6 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
         };
     predict_by_odom(dp);
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    // ROS_INFO("***** Odom Callback at %f -> x y z r p y : %.3f %.3f %.3f %.3f %.3f %.3f *****", msg->header.stamp.toSec(), x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
     nav_msgs::Odometry estimated_pose;
     estimated_pose.header.frame_id = map_frame_id_;
     estimated_pose.header.stamp = msg->header.stamp;
@@ -267,7 +254,6 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
             dt * msg->angular_velocity.y,
             dt * msg->angular_velocity.z,
         };
-    dr = Eigen::Vector3d(dr(1), dr(0), -dr(2));
     predict_by_imu(dr);
   }
   else
@@ -275,7 +261,6 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
     // first callback
   }
   last_imu_stamp_ = stamp;
-  // ROS_WARN("===== IMU Callback at %f -> x y z r p y : %.3f %.3f %.3f %.3f %.3f %.3f =====", msg->header.stamp.toSec(), x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
   imu_queue_.push_back(*msg);
 }
 
