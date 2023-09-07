@@ -412,38 +412,43 @@ void NDTOdomIntegrator::predict_between_timestamps(const ros::Time begin_stamp, 
 {
   std::vector<nav_msgs::Odometry>::iterator itr_odom = odom_queue_.begin();
   std::vector<sensor_msgs::Imu>::iterator itr_imu = imu_queue_.begin();
-  while ((itr_odom+1) != odom_queue_.end())
+  if (odom_queue_.size() >= 2)
   {
-      if (begin_stamp <= itr_odom->header.stamp && itr_odom->header.stamp < end_stamp)
+      while ((itr_odom+1) != odom_queue_.end())
       {
-          double dt = ((itr_odom+1)->header.stamp - itr_odom->header.stamp).toSec();
-          const Eigen::Vector3d dp =
-              {
-                  dt * itr_odom->twist.twist.linear.x,
-                  dt * itr_odom->twist.twist.linear.y,
-                  dt * itr_odom->twist.twist.linear.z,
-              };
-          predict_by_odom(dp);
+          if (begin_stamp <= itr_odom->header.stamp && itr_odom->header.stamp < end_stamp)
+          {
+              double dt = ((itr_odom+1)->header.stamp - itr_odom->header.stamp).toSec();
+              const Eigen::Vector3d dp =
+                  {
+                      dt * itr_odom->twist.twist.linear.x,
+                      dt * itr_odom->twist.twist.linear.y,
+                      dt * itr_odom->twist.twist.linear.z,
+                  };
+              predict_by_odom(dp);
+          }
+          itr_odom++;
       }
-      itr_odom++;
   }
-  while ((itr_imu+1) != imu_queue_.end())
+  if (imu_queue_.size() >= 2)
   {
-      if (begin_stamp <= itr_imu->header.stamp && itr_imu->header.stamp < end_stamp)
+      while ((itr_imu+1) != imu_queue_.end())
       {
-          double dt = ((itr_imu+1)->header.stamp - itr_imu->header.stamp).toSec();
-          const Eigen::Vector3d dr =
-              {
-                  dt * itr_imu->angular_velocity.x,
-                  dt * itr_imu->angular_velocity.y,
-                  dt * itr_imu->angular_velocity.z,
-              };
-          predict_by_imu(dr);
+          if (begin_stamp <= itr_imu->header.stamp && itr_imu->header.stamp < end_stamp)
+          {
+              double dt = ((itr_imu+1)->header.stamp - itr_imu->header.stamp).toSec();
+              const Eigen::Vector3d dr =
+                  {
+                      dt * itr_imu->angular_velocity.x,
+                      dt * itr_imu->angular_velocity.y,
+                      dt * itr_imu->angular_velocity.z,
+                  };
+              predict_by_imu(dr);
+          }
+          itr_imu++;
       }
-      itr_imu++;
   }
 }
-
 void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
 {
   ROS_INFO("update by ndt");
