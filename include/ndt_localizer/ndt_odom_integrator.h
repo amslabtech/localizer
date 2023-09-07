@@ -39,6 +39,7 @@ public:
   geometry_msgs::PoseWithCovariance get_pose_msg_from_state(void);
   void predict_by_odom(const Eigen::Vector3d& dp);
   void predict_by_imu(const Eigen::Vector3d& dr);
+  void predict_between_timestamps(const ros::Time begin_stamp, const ros::Time end_stamp);
   void update_by_ndt_pose(const Eigen::VectorXd& pose);
   Eigen::Matrix3d get_rotation_matrix(double roll, double pitch, double yaw);
   void publish_map_to_odom_tf(const ros::Time& stamp,
@@ -72,6 +73,7 @@ private:
   int queue_size_;
   std::vector<nav_msgs::Odometry> odom_queue_;
   std::vector<sensor_msgs::Imu> imu_queue_;
+  Eigen::VectorXd last_pose_;
   Eigen::VectorXd x_;
   Eigen::MatrixXd p_;
   Eigen::MatrixXd q_odom_;
@@ -79,6 +81,7 @@ private:
   Eigen::MatrixXd r_;
   ros::Time last_odom_stamp_;
   ros::Time last_imu_stamp_;
+  ros::Time last_pose_stamp_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<tf2_ros::Buffer> tf_;
