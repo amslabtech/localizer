@@ -70,7 +70,7 @@ private:
   unsigned int state_dim_;
   unsigned int position_dim_;
   unsigned int orientation_dim_;
-  int queue_size_;
+  int queue_capasity_;
   std::vector<nav_msgs::Odometry> odom_queue_;
   std::vector<sensor_msgs::Imu> imu_queue_;
   Eigen::VectorXd last_pose_;

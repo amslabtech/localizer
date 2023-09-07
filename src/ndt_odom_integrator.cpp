@@ -42,7 +42,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   local_nh_.param<double>("sigma_ndt", sigma_ndt_, 1e-2);
   local_nh_.param<bool>("enable_odom_tf", enable_odom_tf_, true);
   local_nh_.param<bool>("enable_tf", enable_tf_, true);
-  local_nh_.param<int>("queue_size", queue_size_, 1000);
+  local_nh_.param<int>("queue_capasity", queue_capasity_, 1000);
 
   ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
   ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -57,7 +57,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   ROS_INFO_STREAM("sigma_ndt: " << sigma_ndt_);
   ROS_INFO_STREAM("enable_odom_tf: " << enable_odom_tf_);
   ROS_INFO_STREAM("enable_tf: " << enable_tf_);
-  ROS_INFO_STREAM("queue_size: " << queue_size_);
+  ROS_INFO_STREAM("queue_capasity: " << queue_capasity_);
 
   tf_ = std::make_shared<tf2_ros::Buffer>();
   tf_->setUsingDedicatedThread(true);
@@ -82,8 +82,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
 
   odom_queue_.clear();
   imu_queue_.clear();
-  odom_queue_.reserve(queue_size_);
-  imu_queue_.reserve(queue_size_);
+  odom_queue_.reserve(queue_capasity_);
+  imu_queue_.reserve(queue_capasity_);
 
   last_odom_stamp_ = ros::Time(0);
   last_imu_stamp_ = ros::Time(0);
