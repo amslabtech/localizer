@@ -102,7 +102,6 @@ void NDTOdomIntegrator::ndt_pose_callback(
       roll, pitch, yaw;
   update_by_ndt_pose(pose);
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    // ROS_INFO("ndt time x y z r p y : %f %.3f %.3f %.3f %.3f %.3f %.3f", x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
   nav_msgs::Odometry estimated_pose;
   estimated_pose.header.frame_id = map_frame_id_;
   estimated_pose.header.stamp = msg->header.stamp;
@@ -144,8 +143,6 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
         };
     predict_by_odom(dp);
     const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
-    // ROS_INFO("odom : %.3f imu : %.3f", msg1->header.stamp.toSec(), msg2->header.stamp.toSec());
-    ROS_INFO("time x y z r p y : %.3f %.3f %.3f %.3f %.3f %.3f %.3f", msg->header.stamp.toSec(), x_(0), x_(1), x_(2), x_(3), x_(4), x_(5));
     nav_msgs::Odometry estimated_pose;
     estimated_pose.header.frame_id = map_frame_id_;
     estimated_pose.header.stamp = msg->header.stamp;
@@ -176,14 +173,12 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
   if (last_imu_stamp_ != ros::Time(0))
   {
     const double dt = (stamp - last_imu_stamp_).toSec();
-    Eigen::Vector3d dr =
-    // const Eigen::Vector3d dr =
+    const Eigen::Vector3d dr =
         {
             dt * msg->angular_velocity.x,
             dt * msg->angular_velocity.y,
             dt * msg->angular_velocity.z,
         };
-    dr = Eigen::Vector3d(dr(1), dr(0), -dr(2));
     predict_by_imu(dr);
   }
   else

@@ -12,8 +12,6 @@ MapMatcher::MapMatcher(void)
 {
   pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("ndt_pose", 1);
   cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud/aligned", 1);
-  // downsampled_map_pub_ =
-      // nh_.advertise<sensor_msgs::PointCloud2>("map_cloud/downsampled", 1, true);
   pose_sub_ =
       nh_.subscribe("estimated_pose", 1, &MapMatcher::pose_callback, this,
                     ros::TransportHints().reliable().tcpNoDelay(true));
@@ -59,19 +57,6 @@ void MapMatcher::map_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
   is_map_received_ = true;
 }
 
-// void MapMatcher::map_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
-// {
-//   ROS_INFO("received map");
-//   pcl::fromROSMsg(*msg, *map_cloud_ptr_);
-//   ROS_INFO_STREAM("size: " << map_cloud_ptr_->points.size());
-//   apply_voxel_grid_filter(leaf_size_, map_cloud_ptr_);
-//   ROS_INFO_STREAM("downsampled size: " << map_cloud_ptr_->points.size());
-//   sensor_msgs::PointCloud2 output;
-//   pcl::toROSMsg(*map_cloud_ptr_, output);
-//   downsampled_map_pub_.publish(output);
-//   is_map_received_ = true;
-// }
-//
 void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
   if (is_map_received_ && is_pose_updated_)
@@ -96,8 +81,6 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     {
       return;
     }
-    ROS_INFO_STREAM("recieve timestamp : " << received_pose_.header.stamp);
-
     ROS_INFO_STREAM("transform:\n"
                     << transform);
     geometry_msgs::PoseStamped aligned_pose;
@@ -112,11 +95,8 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     aligned_pose.pose.orientation.x = q.x();
     aligned_pose.pose.orientation.y = q.y();
     aligned_pose.pose.orientation.z = q.z();
-
     ROS_INFO_STREAM("aligned pose:\n"
                     << aligned_pose.pose);
-    ROS_INFO_STREAM("aligned Yaw : " << tf2::getYaw(aligned_pose.pose.orientation));
-    ROS_INFO("aligned header stamp:%.3f ",  aligned_pose.header.stamp.toSec());
     pose_pub_.publish(aligned_pose);
     is_pose_updated_ = false;
   }
