@@ -51,7 +51,6 @@ private:
   ros::NodeHandle local_nh_;
   ros::Publisher pose_pub_;
   ros::Publisher cloud_pub_;
-  ros::Publisher downsampled_map_pub_;
   ros::Subscriber pose_sub_;
   ros::Subscriber map_sub_;
   ros::Subscriber cloud_sub_;
