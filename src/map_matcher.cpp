@@ -96,7 +96,6 @@ void MapMatcher::cloud_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     {
       return;
     }
-    ROS_INFO_STREAM("recieve timestamp : " << received_pose_.header.stamp);
 
     ROS_INFO_STREAM("transform:\n"
                     << transform);
