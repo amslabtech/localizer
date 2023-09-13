@@ -70,10 +70,11 @@ private:
   unsigned int state_dim_;
   unsigned int position_dim_;
   unsigned int orientation_dim_;
-  int queue_capasity_;
+  int queue_capacity_;
   std::vector<nav_msgs::Odometry> odom_queue_;
   std::vector<sensor_msgs::Imu> imu_queue_;
   Eigen::VectorXd last_pose_;
+  Eigen::MatrixXd last_covariance_;
   Eigen::VectorXd x_;
   Eigen::MatrixXd p_;
   Eigen::MatrixXd q_odom_;
