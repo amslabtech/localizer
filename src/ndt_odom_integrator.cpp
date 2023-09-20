@@ -80,11 +80,6 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
       Eigen::MatrixXd::Identity(orientation_dim_, orientation_dim_);
   r_ = sigma_ndt_ * Eigen::MatrixXd::Identity(state_dim_, state_dim_);
 
-  odom_queue_.clear();
-  imu_queue_.clear();
-  odom_queue_.reserve(queue_capacity_);
-  imu_queue_.reserve(queue_capacity_);
-
   last_odom_stamp_ = ros::Time(0);
   last_imu_stamp_ = ros::Time(0);
   map_frame_id_ = "";
@@ -113,14 +108,21 @@ void NDTOdomIntegrator::ndt_pose_callback(
   x_ = last_pose_;
   p_ = last_covariance_;
   const ros::Time received_pose_stamp = msg->header.stamp;
-  predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
-  // Filtering
-  update_by_ndt_pose(received_pose);
-  // Predict update from received pose
-  last_pose_ = x_;
-  last_covariance_ = p_;
-  last_pose_stamp_ = msg->header.stamp;
-  predict_between_timestamps(received_pose_stamp, ros::Time::now());
+  if (last_pose_stamp_ <= received_pose_stamp)
+  {
+    predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
+    update_by_ndt_pose(received_pose);
+    last_pose_ = x_;
+    last_covariance_ = p_;
+    last_pose_stamp_ = msg->header.stamp;
+    predict_between_timestamps(received_pose_stamp, ros::Time::now());
+  }
+  else //after initialize
+  {
+    last_pose_ = x_;
+    last_covariance_ = p_;
+    predict_between_timestamps(last_pose_stamp_, ros::Time::now());
+  }
 
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
   nav_msgs::Odometry estimated_pose;
@@ -264,6 +266,7 @@ void NDTOdomIntegrator::init_pose_callback(
   initialize_state(pose_in_map.pose.pose.position.x,
                    pose_in_map.pose.pose.position.y,
                    pose_in_map.pose.pose.position.z, roll, pitch, yaw);
+  last_pose_stamp_ = msg->header.stamp;
   ROS_INFO_STREAM("pose: " << x_.transpose());
 }
 
@@ -289,8 +292,12 @@ void NDTOdomIntegrator::initialize_state(double x, double y, double z,
   estimated_pose_pub_.publish(estimated_pose);
 
   last_pose_ = x_;
-  last_pose_stamp_ = estimated_pose.header.stamp;
   last_covariance_ = p_;
+  odom_queue_.clear();
+  imu_queue_.clear();
+  odom_queue_.reserve(queue_capacity_);
+  imu_queue_.reserve(queue_capacity_);
+
 }
 
 geometry_msgs::PoseWithCovariance
