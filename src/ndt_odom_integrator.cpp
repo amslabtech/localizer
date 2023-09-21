@@ -119,8 +119,6 @@ void NDTOdomIntegrator::ndt_pose_callback(
   }
   else //after initialize
   {
-    last_pose_ = x_;
-    last_covariance_ = p_;
     predict_between_timestamps(last_pose_stamp_, ros::Time::now());
   }
 
