@@ -117,7 +117,7 @@ void NDTOdomIntegrator::ndt_pose_callback(
     last_pose_stamp_ = msg->header.stamp;
     predict_between_timestamps(received_pose_stamp, ros::Time::now());
   }
-  else //after initialize
+  else  // After initialize
   {
     predict_between_timestamps(last_pose_stamp_, ros::Time::now());
   }
@@ -295,7 +295,6 @@ void NDTOdomIntegrator::initialize_state(double x, double y, double z,
   imu_queue_.clear();
   odom_queue_.reserve(queue_capacity_);
   imu_queue_.reserve(queue_capacity_);
-
 }
 
 geometry_msgs::PoseWithCovariance
