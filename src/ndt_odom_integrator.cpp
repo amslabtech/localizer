@@ -1,5 +1,6 @@
 // Copyright 2023 amsl
-
+#include <vector>
+#include <iterator>
 #include <memory>
 
 #include "ndt_localizer/ndt_odom_integrator.h"
@@ -23,8 +24,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
       nh_.subscribe("map_cloud", 1, &NDTOdomIntegrator::map_callback, this,
                     ros::TransportHints().reliable().tcpNoDelay(true));
   init_pose_sub_ =
-      nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback,
-                    this, ros::TransportHints().reliable().tcpNoDelay(true));
+      nh_.subscribe("initialpose", 1, &NDTOdomIntegrator::init_pose_callback, this,
+                    ros::TransportHints().reliable().tcpNoDelay(true));
 
   local_nh_.param<double>("init_sigma_position", init_sigma_position_, 10);
   local_nh_.param<double>("init_sigma_orientation", init_sigma_orientation_,
@@ -41,6 +42,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   local_nh_.param<double>("sigma_ndt", sigma_ndt_, 1e-2);
   local_nh_.param<bool>("enable_odom_tf", enable_odom_tf_, true);
   local_nh_.param<bool>("enable_tf", enable_tf_, true);
+  local_nh_.param<int>("queue_capacity", queue_capacity_, 1000);
 
   ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
   ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -55,6 +57,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   ROS_INFO_STREAM("sigma_ndt: " << sigma_ndt_);
   ROS_INFO_STREAM("enable_odom_tf: " << enable_odom_tf_);
   ROS_INFO_STREAM("enable_tf: " << enable_tf_);
+  ROS_INFO_STREAM("queue_capacity: " << queue_capacity_);
 
   tf_ = std::make_shared<tf2_ros::Buffer>();
   tf_->setUsingDedicatedThread(true);
@@ -97,10 +100,28 @@ void NDTOdomIntegrator::ndt_pose_callback(
   tf2::fromMsg(msg->pose.orientation, q);
   tf2::Matrix3x3 rot(q);
   rot.getRPY(roll, pitch, yaw);
-  Eigen::VectorXd pose = Eigen::VectorXd::Zero(state_dim_);
-  pose << msg->pose.position.x, msg->pose.position.y, msg->pose.position.z,
-      roll, pitch, yaw;
-  update_by_ndt_pose(pose);
+  Eigen::VectorXd received_pose = Eigen::VectorXd::Zero(state_dim_);
+  received_pose << msg->pose.position.x, msg->pose.position.y, msg->pose.position.z,
+                  roll, pitch, yaw;
+
+  // Predict update from last pose
+  x_ = last_pose_;
+  p_ = last_covariance_;
+  const ros::Time received_pose_stamp = msg->header.stamp;
+  if (last_pose_stamp_ <= received_pose_stamp)
+  {
+    predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
+    update_by_ndt_pose(received_pose);
+    last_pose_ = x_;
+    last_covariance_ = p_;
+    last_pose_stamp_ = msg->header.stamp;
+    predict_between_timestamps(received_pose_stamp, ros::Time::now());
+  }
+  else  // After initialize
+  {
+    predict_between_timestamps(last_pose_stamp_, ros::Time::now());
+  }
+
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
   nav_msgs::Odometry estimated_pose;
   estimated_pose.header.frame_id = map_frame_id_;
@@ -108,6 +129,24 @@ void NDTOdomIntegrator::ndt_pose_callback(
   estimated_pose.child_frame_id = robot_frame_id_;
   estimated_pose.pose = p;
   estimated_pose_pub_.publish(estimated_pose);
+
+  // Erase queue before received pose
+  std::vector<nav_msgs::Odometry>::iterator itr_odom = odom_queue_.begin();
+  std::vector<sensor_msgs::Imu>::iterator itr_imu = imu_queue_.begin();
+  while (itr_odom != odom_queue_.end())
+  {
+    if (itr_odom->header.stamp < received_pose_stamp)
+      odom_queue_.erase(itr_odom);
+    else
+      itr_odom++;
+  }
+  while (itr_imu != imu_queue_.end())
+  {
+    if (itr_imu->header.stamp < received_pose_stamp)
+      imu_queue_.erase(itr_imu);
+    else
+      itr_imu++;
+  }
 }
 
 void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
@@ -149,6 +188,7 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
     estimated_pose.child_frame_id = robot_frame_id_;
     estimated_pose.pose = p;
     estimated_pose_pub_.publish(estimated_pose);
+
     if (enable_tf_)
     {
       publish_map_to_odom_tf(estimated_pose.header.stamp,
@@ -160,6 +200,7 @@ void NDTOdomIntegrator::odom_callback(const nav_msgs::OdometryConstPtr& msg)
     // first callback
   }
   last_odom_stamp_ = stamp;
+  odom_queue_.push_back(*msg);
 }
 
 void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
@@ -186,6 +227,7 @@ void NDTOdomIntegrator::imu_callback(const sensor_msgs::ImuConstPtr& msg)
     // first callback
   }
   last_imu_stamp_ = stamp;
+  imu_queue_.push_back(*msg);
 }
 
 void NDTOdomIntegrator::map_callback(
@@ -222,6 +264,7 @@ void NDTOdomIntegrator::init_pose_callback(
   initialize_state(pose_in_map.pose.pose.position.x,
                    pose_in_map.pose.pose.position.y,
                    pose_in_map.pose.pose.position.z, roll, pitch, yaw);
+  last_pose_stamp_ = msg->header.stamp;
   ROS_INFO_STREAM("pose: " << x_.transpose());
 }
 
@@ -245,6 +288,13 @@ void NDTOdomIntegrator::initialize_state(double x, double y, double z,
   estimated_pose.child_frame_id = robot_frame_id_;
   estimated_pose.pose = p;
   estimated_pose_pub_.publish(estimated_pose);
+
+  last_pose_ = x_;
+  last_covariance_ = p_;
+  odom_queue_.clear();
+  imu_queue_.clear();
+  odom_queue_.reserve(queue_capacity_);
+  imu_queue_.reserve(queue_capacity_);
 }
 
 geometry_msgs::PoseWithCovariance
@@ -363,6 +413,48 @@ void NDTOdomIntegrator::predict_by_imu(const Eigen::Vector3d& dr)
   p_ = jf * p_ * jf.transpose() + q_imu_;
   // ROS_INFO_STREAM("x: " << x_.transpose());
   // ROS_INFO_STREAM("p:\n" << p_);
+}
+
+void NDTOdomIntegrator::predict_between_timestamps(const ros::Time begin_stamp, const ros::Time end_stamp)
+{
+  std::vector<nav_msgs::Odometry>::iterator itr_odom = odom_queue_.begin();
+  std::vector<sensor_msgs::Imu>::iterator itr_imu = imu_queue_.begin();
+  if (odom_queue_.size() >= 2)
+  {
+    while ((itr_odom+1) != odom_queue_.end())
+    {
+      if (begin_stamp <= itr_odom->header.stamp && itr_odom->header.stamp < end_stamp)
+      {
+        const double dt = ((itr_odom+1)->header.stamp - itr_odom->header.stamp).toSec();
+        const Eigen::Vector3d dp =
+            {
+                dt * itr_odom->twist.twist.linear.x,
+                dt * itr_odom->twist.twist.linear.y,
+                dt * itr_odom->twist.twist.linear.z,
+            };
+        predict_by_odom(dp);
+      }
+        itr_odom++;
+    }
+  }
+  if (imu_queue_.size() >= 2)
+  {
+    while ((itr_imu+1) != imu_queue_.end())
+    {
+      if (begin_stamp <= itr_imu->header.stamp && itr_imu->header.stamp < end_stamp)
+      {
+        const double dt = ((itr_imu+1)->header.stamp - itr_imu->header.stamp).toSec();
+        const Eigen::Vector3d dr =
+            {
+                dt * itr_imu->angular_velocity.x,
+                dt * itr_imu->angular_velocity.y,
+                dt * itr_imu->angular_velocity.z,
+            };
+        predict_by_imu(dr);
+      }
+        itr_imu++;
+    }
+  }
 }
 
 void NDTOdomIntegrator::update_by_ndt_pose(const Eigen::VectorXd& pose)
