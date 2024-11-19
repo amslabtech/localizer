@@ -43,6 +43,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   local_nh_.param<bool>("enable_odom_tf", enable_odom_tf_, true);
   local_nh_.param<bool>("enable_tf", enable_tf_, true);
   local_nh_.param<int>("queue_capacity", queue_capacity_, 1000);
+  local_nh_.param<double>("mahalanobis_threshold", mahalanobis_threshold_, 1.5);
 
   ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
   ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -58,6 +59,7 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   ROS_INFO_STREAM("enable_odom_tf: " << enable_odom_tf_);
   ROS_INFO_STREAM("enable_tf: " << enable_tf_);
   ROS_INFO_STREAM("queue_capacity: " << queue_capacity_);
+  ROS_INFO_STREAM("mahalanobis_threshold: " << mahalanobis_threshold_);
 
   tf_ = std::make_shared<tf2_ros::Buffer>();
   tf_->setUsingDedicatedThread(true);
@@ -111,7 +113,10 @@ void NDTOdomIntegrator::ndt_pose_callback(
   if (last_pose_stamp_ <= received_pose_stamp)
   {
     predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
-    update_by_ndt_pose(received_pose);
+
+    if(is_mahalanobis_gate(mahalanobis_threshold_, received_pose, x_, p_))
+      update_by_ndt_pose(received_pose);
+
     last_pose_ = x_;
     last_covariance_ = p_;
     last_pose_stamp_ = msg->header.stamp;
@@ -500,6 +505,22 @@ NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch, double yaw)
                          Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()))
           .matrix();
   return rot;
+}
+
+bool NDTOdomIntegrator::is_mahalanobis_gate(const double mahalanobis_threshold, const Eigen::VectorXd& ndt_pose, const Eigen::VectorXd& x, const Eigen::MatrixXd& cov)
+{
+  Eigen::MatrixXd mahalanobis_squared = (ndt_pose - x).transpose() * cov.inverse() * (ndt_pose - x);
+
+  if(mahalanobis_squared(0) > mahalanobis_threshold * mahalanobis_threshold)
+  {
+    ROS_ERROR_STREAM("Mahalanobis distance is over the threshold: " << std::sqrt(mahalanobis_squared(0)));
+    return false;
+  }
+  else
+  {
+    ROS_WARN_STREAM("Mahalanobis distance is under the threshold: " << std::sqrt(mahalanobis_squared(0)));
+    return true;
+  }
 }
 
 void NDTOdomIntegrator::publish_map_to_odom_tf(
