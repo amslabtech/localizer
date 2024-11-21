@@ -43,7 +43,7 @@ public:
   void update_by_ndt_pose(const Eigen::VectorXd& pose);
   Eigen::Matrix3d get_rotation_matrix(double roll, double pitch, double yaw);
   bool is_mahalanobis_distance_gate(const double mahalanobis_distance_threshold, const Eigen::VectorXd& ndt_pose,
-                           const Eigen::VectorXd& x, const Eigen::MatrixXd& cov);
+                           const Eigen::VectorXd& last_pose, const Eigen::MatrixXd& cov);
   void publish_map_to_odom_tf(const ros::Time& stamp,
                               const geometry_msgs::Pose& pose);
   void process(void);

@@ -509,20 +509,19 @@ NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch, double yaw)
 
 bool NDTOdomIntegrator::is_mahalanobis_distance_gate(
                         const double mahalanobis_distance_threshold, const Eigen::VectorXd& ndt_pose,
-                        const Eigen::VectorXd& x, const Eigen::MatrixXd& cov)
+                        const Eigen::VectorXd& last_pose, const Eigen::MatrixXd& cov)
 {
-  Eigen::MatrixXd mahalanobis_distance_squared = (ndt_pose - x).transpose() * cov.inverse() * (ndt_pose - x);
+  const double mahalanobis_distance =
+                  std::sqrt((ndt_pose - last_pose).transpose() * cov.inverse() * (ndt_pose - last_pose));
 
-  if (mahalanobis_distance_squared(0) > mahalanobis_distance_threshold * mahalanobis_distance_threshold)
+  if (mahalanobis_distance > mahalanobis_distance_threshold)
   {
-    ROS_ERROR_STREAM("Mahalanobis_distance distance is over the threshold: "
-                      << std::sqrt(mahalanobis_distance_squared(0)));
+    ROS_ERROR_STREAM("Mahalanobis_distance distance is over the threshold: " << mahalanobis_distance);
     return false;
   }
   else
   {
-    ROS_WARN_STREAM("Mahalanobis_distance distance is under the threshold: "
-                     << std::sqrt(mahalanobis_distance_squared(0)));
+    ROS_WARN_STREAM("Mahalanobis_distance distance is under the threshold: " << mahalanobis_distance);
     return true;
   }
 }
