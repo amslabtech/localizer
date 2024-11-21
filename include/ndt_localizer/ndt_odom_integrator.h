@@ -42,7 +42,7 @@ public:
   void predict_between_timestamps(const ros::Time begin_stamp, const ros::Time end_stamp);
   void update_by_ndt_pose(const Eigen::VectorXd& pose);
   Eigen::Matrix3d get_rotation_matrix(double roll, double pitch, double yaw);
-  bool is_mahalanobis_gate(const double mahalanobis_threshold, const Eigen::VectorXd& ndt_pose,
+  bool is_mahalanobis_distance_gate(const double mahalanobis_distance_threshold, const Eigen::VectorXd& ndt_pose,
                            const Eigen::VectorXd& x, const Eigen::MatrixXd& cov);
   void publish_map_to_odom_tf(const ros::Time& stamp,
                               const geometry_msgs::Pose& pose);
@@ -68,7 +68,7 @@ private:
   double sigma_ndt_;
   bool enable_odom_tf_;
   bool enable_tf_;
-  double mahalanobis_threshold_;
+  double mahalanobis_distance_threshold_;
 
   unsigned int state_dim_;
   unsigned int position_dim_;
