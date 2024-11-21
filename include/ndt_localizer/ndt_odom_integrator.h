@@ -69,11 +69,13 @@ private:
   bool enable_odom_tf_;
   bool enable_tf_;
   double mahalanobis_distance_threshold_;
+  double loop_count_threshold_;
 
   unsigned int state_dim_;
   unsigned int position_dim_;
   unsigned int orientation_dim_;
   int queue_capacity_;
+  int loop_counter_ = 0;
   std::vector<nav_msgs::Odometry> odom_queue_;
   std::vector<sensor_msgs::Imu> imu_queue_;
   Eigen::VectorXd last_pose_;
