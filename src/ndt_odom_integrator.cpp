@@ -114,7 +114,7 @@ void NDTOdomIntegrator::ndt_pose_callback(
   {
     predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
 
-    if(is_mahalanobis_gate(mahalanobis_threshold_, received_pose, x_, p_))
+    if (is_mahalanobis_gate(mahalanobis_threshold_, received_pose, x_, p_))
       update_by_ndt_pose(received_pose);
 
     last_pose_ = x_;
@@ -507,11 +507,12 @@ NDTOdomIntegrator::get_rotation_matrix(double roll, double pitch, double yaw)
   return rot;
 }
 
-bool NDTOdomIntegrator::is_mahalanobis_gate(const double mahalanobis_threshold, const Eigen::VectorXd& ndt_pose, const Eigen::VectorXd& x, const Eigen::MatrixXd& cov)
+bool NDTOdomIntegrator::is_mahalanobis_gate(const double mahalanobis_threshold, const Eigen::VectorXd& ndt_pose,
+                                            const Eigen::VectorXd& x, const Eigen::MatrixXd& cov)
 {
   Eigen::MatrixXd mahalanobis_squared = (ndt_pose - x).transpose() * cov.inverse() * (ndt_pose - x);
 
-  if(mahalanobis_squared(0) > mahalanobis_threshold * mahalanobis_threshold)
+  if (mahalanobis_squared(0) > mahalanobis_threshold * mahalanobis_threshold)
   {
     ROS_ERROR_STREAM("Mahalanobis distance is over the threshold: " << std::sqrt(mahalanobis_squared(0)));
     return false;
