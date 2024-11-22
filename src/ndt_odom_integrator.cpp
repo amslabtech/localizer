@@ -521,7 +521,7 @@ bool NDTOdomIntegrator::is_mahalanobis_distance_gate(
   }
   else
   {
-    ROS_WARN_STREAM("Mahalanobis_distance distance is under the threshold: " << mahalanobis_distance);
+    // ROS_WARN_STREAM("Mahalanobis_distance distance is under the threshold: " << mahalanobis_distance);
     return true;
   }
 }
