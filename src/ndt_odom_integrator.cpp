@@ -44,7 +44,6 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   local_nh_.param<bool>("enable_tf", enable_tf_, true);
   local_nh_.param<int>("queue_capacity", queue_capacity_, 1000);
   local_nh_.param<double>("mahalanobis_distance_threshold", mahalanobis_distance_threshold_, 1.5);
-  local_nh_.param<double>("loop_count_threshold", loop_count_threshold_, 10);
 
   ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
   ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -61,7 +60,6 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   ROS_INFO_STREAM("enable_tf: " << enable_tf_);
   ROS_INFO_STREAM("queue_capacity: " << queue_capacity_);
   ROS_INFO_STREAM("mahalanobis_distance_threshold: " << mahalanobis_distance_threshold_);
-  ROS_INFO_STREAM("loop_count_threshold: " << loop_count_threshold_);
 
   tf_ = std::make_shared<tf2_ros::Buffer>();
   tf_->setUsingDedicatedThread(true);
@@ -116,25 +114,17 @@ void NDTOdomIntegrator::ndt_pose_callback(
   {
     predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
 
-    if (is_mahalanobis_distance_gate(mahalanobis_distance_threshold_, received_pose, x_, p_) ||
-        (loop_counter_ < loop_count_threshold_))
+    if (is_mahalanobis_distance_gate(mahalanobis_distance_threshold_, received_pose, x_, p_))
       update_by_ndt_pose(received_pose);
 
     last_pose_ = x_;
     last_covariance_ = p_;
     last_pose_stamp_ = msg->header.stamp;
     predict_between_timestamps(received_pose_stamp, ros::Time::now());
-
-    if (loop_counter_ < loop_count_threshold_)
-    {
-      ROS_WARN_STREAM("loop_counter is under the threshold: " << loop_counter_);
-      loop_counter_++;
-    }
   }
   else  // After initialize
   {
     predict_between_timestamps(last_pose_stamp_, ros::Time::now());
-    loop_counter_ = 0;
   }
 
   const geometry_msgs::PoseWithCovariance p = get_pose_msg_from_state();
