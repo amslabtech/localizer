@@ -44,6 +44,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   local_nh_.param<bool>("enable_tf", enable_tf_, true);
   local_nh_.param<int>("queue_capacity", queue_capacity_, 1000);
   local_nh_.param<double>("mahalanobis_distance_threshold", mahalanobis_distance_threshold_, 1.5);
+  local_nh_.param<double>("pose_covariance_threshold", pose_covariance_threshold_, 1.0);
+  local_nh_.param<double>("direction_covariance_threshold", direction_covariance_threshold_, 1.0);
 
   ROS_INFO_STREAM("init_sigma_position: " << init_sigma_position_);
   ROS_INFO_STREAM("init_sigma_orientation: " << init_sigma_orientation_);
@@ -60,6 +62,8 @@ NDTOdomIntegrator::NDTOdomIntegrator(void)
   ROS_INFO_STREAM("enable_tf: " << enable_tf_);
   ROS_INFO_STREAM("queue_capacity: " << queue_capacity_);
   ROS_INFO_STREAM("mahalanobis_distance_threshold: " << mahalanobis_distance_threshold_);
+  ROS_INFO_STREAM("pose_covariance_threshold: " << pose_covariance_threshold_);
+  ROS_INFO_STREAM("direction_covariance_threshold: " << direction_covariance_threshold_);
 
   tf_ = std::make_shared<tf2_ros::Buffer>();
   tf_->setUsingDedicatedThread(true);
@@ -114,7 +118,8 @@ void NDTOdomIntegrator::ndt_pose_callback(
   {
     predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
 
-    if (is_mahalanobis_distance_gate(mahalanobis_distance_threshold_, received_pose, x_, p_))
+    if (is_mahalanobis_distance_gate(mahalanobis_distance_threshold_, received_pose, x_, p_) ||
+        is_covariance_large(pose_covariance_threshold_, direction_covariance_threshold_, p_))
       update_by_ndt_pose(received_pose);
 
     last_pose_ = x_;
@@ -523,6 +528,35 @@ bool NDTOdomIntegrator::is_mahalanobis_distance_gate(
   {
     // ROS_WARN_STREAM("Mahalanobis_distance distance is under the threshold: " << mahalanobis_distance);
     return true;
+  }
+}
+
+bool NDTOdomIntegrator::is_covariance_large(const double pose_covariance_threshold,
+                        const double direction_covariance_threshold, const Eigen::MatrixXd& covariance)
+{
+  const double variance_x    = p_(0, 0);
+  const double covariance_xy = p_(0, 1);
+  const double variance_y    = p_(1, 1);
+  const double variance_yaw  = p_(5, 5);
+
+  if ((variance_x > pose_covariance_threshold) || (covariance_xy > pose_covariance_threshold)
+      || (variance_y > pose_covariance_threshold) || (variance_yaw > direction_covariance_threshold))
+  {
+    if (variance_x > pose_covariance_threshold)
+      ROS_ERROR_STREAM("variance_x is over the threshold: " << variance_x);
+    if (covariance_xy > pose_covariance_threshold)
+      ROS_ERROR_STREAM("covariance_xy is over the threshold: " << covariance_xy);
+    if (variance_y > pose_covariance_threshold)
+      ROS_ERROR_STREAM("variance_y is over the threshold: " << variance_y);
+    if (variance_yaw > direction_covariance_threshold)
+      ROS_ERROR_STREAM("variance_yaw is over the threshold: " << variance_yaw);
+
+    return true;
+  }
+  else
+  {
+    // ROS_WARN_STREAM("Covariance is under the threshold.");
+    return false;
   }
 }
 
