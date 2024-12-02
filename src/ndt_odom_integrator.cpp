@@ -119,7 +119,7 @@ void NDTOdomIntegrator::ndt_pose_callback(
     predict_between_timestamps(last_pose_stamp_, received_pose_stamp);
 
     if (is_mahalanobis_distance_gate(mahalanobis_distance_threshold_, received_pose, x_, p_) ||
-        is_covariance_gate(pose_covariance_threshold_, direction_covariance_threshold_, p_))
+        judge_from_covariance(pose_covariance_threshold_, direction_covariance_threshold_, p_))
       update_by_ndt_pose(received_pose);
 
     last_pose_ = x_;
@@ -531,7 +531,7 @@ bool NDTOdomIntegrator::is_mahalanobis_distance_gate(
   }
 }
 
-bool NDTOdomIntegrator::is_covariance_gate(const double pose_covariance_threshold,
+bool NDTOdomIntegrator::judge_from_covariance(const double pose_covariance_threshold,
                         const double direction_covariance_threshold, const Eigen::MatrixXd& covariance)
 {
   const double variance_x    = p_(0, 0);

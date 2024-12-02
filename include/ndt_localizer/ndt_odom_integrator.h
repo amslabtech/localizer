@@ -44,7 +44,7 @@ public:
   Eigen::Matrix3d get_rotation_matrix(double roll, double pitch, double yaw);
   bool is_mahalanobis_distance_gate(const double mahalanobis_distance_threshold, const Eigen::VectorXd& ndt_pose,
                            const Eigen::VectorXd& last_pose, const Eigen::MatrixXd& cov);
-  bool is_covariance_gate(const double pose_covariance_threshold, const double direction_covariance_threshold,
+  bool judge_from_covariance(const double pose_covariance_threshold, const double direction_covariance_threshold,
                           const Eigen::MatrixXd& covariance);
   void publish_map_to_odom_tf(const ros::Time& stamp,
                               const geometry_msgs::Pose& pose);
