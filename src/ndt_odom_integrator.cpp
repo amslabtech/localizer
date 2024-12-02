@@ -542,16 +542,14 @@ bool NDTOdomIntegrator::is_covariance_large(const double pose_covariance_thresho
   if ((variance_x > pose_covariance_threshold) || (covariance_xy > pose_covariance_threshold)
       || (variance_y > pose_covariance_threshold) || (variance_yaw > direction_covariance_threshold))
   {
-    ROS_ERROR_STREAM("Covariance is over the threshold.");
-
     if (variance_x > pose_covariance_threshold)
-      ROS_ERROR_STREAM("variance_x: " << variance_x);
+      ROS_ERROR_STREAM("Variance_x is over the threshold: " << variance_x);
     if (covariance_xy > pose_covariance_threshold)
-      ROS_ERROR_STREAM("covariance_xy: " << covariance_xy);
+      ROS_ERROR_STREAM("Covariance_xy is over the threshold: " << covariance_xy);
     if (variance_y > pose_covariance_threshold)
-      ROS_ERROR_STREAM("variance_y: " << variance_y);
+      ROS_ERROR_STREAM("Variance_y is over the threshold: " << variance_y);
     if (variance_yaw > direction_covariance_threshold)
-      ROS_ERROR_STREAM("variance_yaw: " << variance_yaw);
+      ROS_ERROR_STREAM("Variance_yaw is over the threshold: " << variance_yaw);
 
     return true;
   }
