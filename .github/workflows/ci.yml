@@ -3,21 +3,21 @@ name: ci
 on:
   push:
     branches:
-      - amsl-master
+      - ros2
   pull_request:
     branches:
-      - amsl-master
+      - ros2
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup ROS
         uses: ros-tooling/setup-ros@v0.7
         with:
-          required-ros-distributions: noetic
+          required-ros-distributions: humble
       - name: Build
         uses: ros-tooling/action-ros-ci@v0.3
         with:
