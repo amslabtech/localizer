@@ -10,14 +10,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: ros:humble
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup ROS
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: humble
       - name: Build
         uses: ros-tooling/action-ros-ci@v0.3
         with:
