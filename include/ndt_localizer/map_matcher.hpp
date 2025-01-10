@@ -31,8 +31,7 @@ public:
   typedef pcl::PointCloud<PointType> CloudType;
   typedef pcl::PointCloud<PointType>::Ptr CloudTypePtr;
 
-  MapMatcher(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-  virtual ~MapMatcher(void) = default;
+  explicit MapMatcher(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   void pose_callback(const nav_msgs::msg::Odometry::ConstSharedPtr & msg);
   void map_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
