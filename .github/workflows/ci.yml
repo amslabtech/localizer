@@ -20,7 +20,7 @@ jobs:
         run: |
           apt update
           apt install -yq --no-install-recommends python3-pip
-          python3 -m pip install colcon-lcov-result \
+          python3 -m pip install \
             colcon-coveragepy-result \
             colcon-mixin
       - name: Build
