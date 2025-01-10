@@ -1,9 +1,7 @@
 # localizer
 
 ## Requirement
-- ros (melodic or noetic)
-- PCL 1.8
-- [ndt_omp](https://github.com/koide3/ndt_omp)
+- ros (humble or later)
 
 ## Runtime requirements
 - tf from robot base frame (e.g. base_link) to sensor frame (e.g. velodyne)
@@ -23,7 +21,7 @@
 - /map_cloud (sensor_msgs/PointCloud2)
   - map data
 - /estimated_pose (geometry_msgs/PoseWithCovarianceStamped)
-  - used to set `init_guess` for NDT 
+  - used to set `init_guess` for NDT
 
 ### ndt_odom_integrator
 #### Published topics

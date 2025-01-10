@@ -1,11 +1,12 @@
 // Copyright 2023 amsl
 
-#include "ndt_localizer/map_matcher.h"
+#include "ndt_localizer/map_matcher.hpp"
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
-  ros::init(argc, argv, "map_matcher");
-  ndt_localizer::MapMatcher map_matcher;
-  map_matcher.process();
+  rclcpp::init(argc, argv);
+  const auto node = std::make_shared<ndt_localizer::MapMatcher>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
   return 0;
 }

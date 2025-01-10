@@ -1,11 +1,12 @@
 // Copyright 2023 amsl
 
-#include "ndt_localizer/ndt_odom_integrator.h"
+#include "ndt_localizer/ndt_odom_integrator.hpp"
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
-  ros::init(argc, argv, "ndt_odom_integrator");
-  ndt_localizer::NDTOdomIntegrator ndt_odom_integrator;
-  ndt_odom_integrator.process();
+  rclcpp::init(argc, argv);
+  const auto node = std::make_shared<ndt_localizer::NDTOdomIntegrator>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
   return 0;
 }
